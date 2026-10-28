@@ -66,8 +66,9 @@
 ## 12. Verificação integrada
 
 - [x] 12.1 Rodar `dart format .`, `flutter analyze` e `flutter test`. Verificar que os três passam sem avisos nem falhas.
-- [ ] 12.2 Junto com o usuário, fazer o smoke test contra o Firebase real em macOS, iOS, Android e Windows (este último em máquina Windows): cadastro, login, criar, editar, concluir, reabrir e excluir, tarefa atrasada, logout, reabrir o app autenticado, conta criada numa plataforma e usada em outra e atualização após alteração em outro dispositivo. Verificar que o comportamento bate com as specs nas quatro plataformas.
+- [x] 12.2 Junto com o usuário, fazer o smoke test contra o Firebase real em macOS, iOS, Android e Windows (este último em máquina Windows): cadastro, login, criar, editar, concluir, reabrir e excluir, tarefa atrasada, logout, reabrir o app autenticado, conta criada numa plataforma e usada em outra e atualização após alteração em outro dispositivo. Verificar que o comportamento bate com as specs nas quatro plataformas.
 - [ ] 12.3 Medir o tamanho e o tempo do build release no Windows com os plugins FlutterFire compilados e não usados (risco do `design.md`). Verificar registrando o resultado para o usuário decidir se vale uma change de mitigação.
+  - **Pendente** (27/10/2026): o usuário optou por não medir agora. Para medir, na máquina Windows: `flutter build windows --release`, anotando o tempo do build e o tamanho de `build\windows\x64\runner\Release`.
 
 ## Workflow follow-up
 
