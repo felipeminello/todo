@@ -22,12 +22,12 @@
 
 ## 4. Verificação nas plataformas
 
-- [ ] 4.1 macOS: remover o app antigo, rodar `killall Dock` e `flutter run -d macos`. Verificar que Dock, Finder e Cmd+Tab mostram a pilha com check e que a Dock não põe moldura cinza em volta. Se puser, ajustar o tile do `desktop.svg` ao template do macOS, regenerar e verificar de novo.
-- [ ] 4.2 iOS: desinstalar o app do simulador e rodar `flutter run` num iPhone e num iPad. Verificar a tela inicial, a busca e os Ajustes, e que a pilha e a sombra ficam inteiras dentro do recorte.
-- [ ] 4.3 Android: desinstalar e rodar num emulador com API 33 ou superior. Verificar o ícone com a máscara padrão e, com os ícones temáticos ligados, a silhueta monocromática tingida. Se o `minSdk` efetivo for menor que 26, verificar também num emulador com API abaixo de 26 que aparece o ícone estático.
-- [ ] 4.4 Windows (em máquina Windows, junto com o usuário): `flutter build windows` e `ie4uinit.exe -show`. Verificar a barra de tarefas, a barra de título e o Explorer em "Detalhes" (16 px, arte simplificada reconhecível) e em "Ícones extragrandes" (256 px, arte completa).
+- [x] 4.1 macOS: remover o app antigo, rodar `killall Dock` e `flutter run -d macos`. Verificar que Dock, Finder e Cmd+Tab mostram a pilha com check e que a Dock não põe moldura cinza em volta. Se puser, ajustar o tile do `desktop.svg` ao template do macOS, regenerar e verificar de novo.
+- [x] 4.2 iOS: desinstalar o app do simulador e rodar `flutter run` num iPhone e num iPad. Verificar a tela inicial, a busca e os Ajustes, e que a pilha e a sombra ficam inteiras dentro do recorte.
+- [x] 4.3 Android: desinstalar e rodar num emulador com API 33 ou superior. Verificar o ícone com a máscara padrão e, com os ícones temáticos ligados, a silhueta monocromática tingida. Se o `minSdk` efetivo for menor que 26, verificar também num emulador com API abaixo de 26 que aparece o ícone estático.
+- [x] 4.4 Windows (em máquina Windows, junto com o usuário): `flutter build windows` e `ie4uinit.exe -show`. Verificar a barra de tarefas, a barra de título e o Explorer em "Detalhes" (16 px, arte simplificada reconhecível) e em "Ícones extragrandes" (256 px, arte completa).
 - [x] 4.5 Confirmar que nenhum arquivo de ícone de plataforma ficou com o logo do Flutter. Listar os arquivos de `mipmap-*`, dos dois appiconsets e o `.ico`, e verificar que todos foram regravados pela geração (`find ... -newer flutter_launcher_icons.yaml`) e conferem visualmente.
-- [ ] 4.6 Mostrar ao usuário os ícones gerados e decidir as duas questões em aberto do `design.md` (tom do tile e conteúdo do 16 px). Se houver ajuste, ele fica só nos SVGs: regenerar e repetir a verificação da plataforma afetada.
+- [x] 4.6 Mostrar ao usuário os ícones gerados e decidir as duas questões em aberto do `design.md` (tom do tile e conteúdo do 16 px). Se houver ajuste, ele fica só nos SVGs: regenerar e repetir a verificação da plataforma afetada.
 - [x] 4.7 Rodar `dart format .`, `flutter analyze` e `flutter test`. Verificar que os três passam sem avisos nem falhas.
 
 ## Workflow follow-up

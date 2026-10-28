@@ -110,5 +110,7 @@ Não há dados nem usuários afetados. A troca é só de arquivos de recurso. O 
 
 ## Open Questions
 
-- Escurecer um ou dois tons o gradiente do tile, por contraste em fundo claro. Muda só cores nos SVGs.
-- Em 16 px, manter os dois cartões ou deixar só a caixa com o check. Muda só o `small.svg`.
+Resolvidas na verificação (tarefa 4.6): o usuário aprovou os ícones como foram gerados.
+
+- Tom do tile: fica o lavanda claro da prévia.
+- Arte de 16 px: ficam os dois cartões com a caixa marcada.
