@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "679707228997",
+    "project_id": "todo-bomber",
+    "storage_bucket": "todo-bomber.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:679707228997:android:a859cffb0bf0f18db69c2c",
+        "android_client_info": {
+          "package_name": "br.dev.minello.todo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9i_a-JoDsBvapu7W2n9aMOpcV_IRKBqg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

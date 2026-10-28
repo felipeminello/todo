@@ -99,6 +99,300 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Minhas Tarefas'**
   String get appTitle;
+
+  /// Rótulo de acessibilidade do indicador de carregamento
+  ///
+  /// In pt, this message translates to:
+  /// **'Carregando'**
+  String get loadingLabel;
+
+  /// Título da tela de login
+  ///
+  /// In pt, this message translates to:
+  /// **'Entrar'**
+  String get authSignInTitle;
+
+  /// Título da tela de cadastro
+  ///
+  /// In pt, this message translates to:
+  /// **'Criar conta'**
+  String get authSignUpTitle;
+
+  /// Rótulo do campo de e-mail
+  ///
+  /// In pt, this message translates to:
+  /// **'E-mail'**
+  String get authEmailLabel;
+
+  /// Rótulo do campo de senha
+  ///
+  /// In pt, this message translates to:
+  /// **'Senha'**
+  String get authPasswordLabel;
+
+  /// Botão que envia o login
+  ///
+  /// In pt, this message translates to:
+  /// **'Entrar'**
+  String get authSignInButton;
+
+  /// Botão que envia o cadastro
+  ///
+  /// In pt, this message translates to:
+  /// **'Criar conta'**
+  String get authSignUpButton;
+
+  /// Alterna do login para o cadastro
+  ///
+  /// In pt, this message translates to:
+  /// **'Não tem conta? Criar conta'**
+  String get authSwitchToSignUp;
+
+  /// Alterna do cadastro para o login
+  ///
+  /// In pt, this message translates to:
+  /// **'Já tem conta? Entrar'**
+  String get authSwitchToSignIn;
+
+  /// Erro de validação: e-mail vazio
+  ///
+  /// In pt, this message translates to:
+  /// **'Informe o e-mail'**
+  String get authEmailRequired;
+
+  /// Erro de validação: e-mail malformado
+  ///
+  /// In pt, this message translates to:
+  /// **'E-mail inválido'**
+  String get authEmailInvalid;
+
+  /// Erro de validação: senha vazia
+  ///
+  /// In pt, this message translates to:
+  /// **'Informe a senha'**
+  String get authPasswordRequired;
+
+  /// Login recusado; não revela se o e-mail existe
+  ///
+  /// In pt, this message translates to:
+  /// **'E-mail ou senha incorretos.'**
+  String get authErrorInvalidCredentials;
+
+  /// Cadastro recusado: e-mail já cadastrado
+  ///
+  /// In pt, this message translates to:
+  /// **'Este e-mail já está em uso.'**
+  String get authErrorEmailInUse;
+
+  /// Cadastro recusado: senha fraca
+  ///
+  /// In pt, this message translates to:
+  /// **'Senha fraca. Use pelo menos 6 caracteres.'**
+  String get authErrorWeakPassword;
+
+  /// Provedor recusou o formato do e-mail
+  ///
+  /// In pt, this message translates to:
+  /// **'E-mail inválido.'**
+  String get authErrorInvalidEmail;
+
+  /// Falha de rede no login ou cadastro
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem conexão. Verifique a internet e tente de novo.'**
+  String get authErrorNetwork;
+
+  /// Falha inesperada no login ou cadastro
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível concluir. Tente de novo.'**
+  String get authErrorUnknown;
+
+  /// Dica do botão de logout
+  ///
+  /// In pt, this message translates to:
+  /// **'Sair'**
+  String get signOutTooltip;
+
+  /// Dica do botão que recarrega as tarefas
+  ///
+  /// In pt, this message translates to:
+  /// **'Atualizar'**
+  String get refreshTooltip;
+
+  /// Dica do botão que cria uma tarefa
+  ///
+  /// In pt, this message translates to:
+  /// **'Nova tarefa'**
+  String get addTaskTooltip;
+
+  /// Título do estado vazio
+  ///
+  /// In pt, this message translates to:
+  /// **'Nenhuma tarefa ainda'**
+  String get tasksEmptyTitle;
+
+  /// Convite do estado vazio
+  ///
+  /// In pt, this message translates to:
+  /// **'Use o botão + para criar a primeira tarefa.'**
+  String get tasksEmptyMessage;
+
+  /// Cabeçalho do bloco de tarefas sem data
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem data'**
+  String get tasksUndatedHeader;
+
+  /// Rótulo do destaque de atraso
+  ///
+  /// In pt, this message translates to:
+  /// **'Atrasada'**
+  String get tasksOverdueLabel;
+
+  /// Anúncio do leitor de tela para um dia atrasado
+  ///
+  /// In pt, this message translates to:
+  /// **'{date}, tarefas atrasadas'**
+  String tasksDayOverdueSemantics(String date);
+
+  /// Cabeçalho da lista de concluídas com a quantidade
+  ///
+  /// In pt, this message translates to:
+  /// **'Concluídas ({count})'**
+  String tasksCompletedHeader(int count);
+
+  /// Rótulo da caixa de seleção de uma tarefa pendente
+  ///
+  /// In pt, this message translates to:
+  /// **'Marcar como concluída'**
+  String get taskMarkDone;
+
+  /// Rótulo da caixa de seleção de uma tarefa concluída
+  ///
+  /// In pt, this message translates to:
+  /// **'Marcar como pendente'**
+  String get taskMarkPending;
+
+  /// Dica do botão de excluir
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluir tarefa'**
+  String get taskDeleteTooltip;
+
+  /// Título da confirmação de exclusão
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluir tarefa?'**
+  String get taskDeleteDialogTitle;
+
+  /// Mensagem da confirmação de exclusão
+  ///
+  /// In pt, this message translates to:
+  /// **'\"{title}\" será excluída permanentemente.'**
+  String taskDeleteDialogMessage(String title);
+
+  /// Ação de cancelar
+  ///
+  /// In pt, this message translates to:
+  /// **'Cancelar'**
+  String get cancelAction;
+
+  /// Ação de excluir
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluir'**
+  String get deleteAction;
+
+  /// Ação de repetir após falha
+  ///
+  /// In pt, this message translates to:
+  /// **'Tentar de novo'**
+  String get retryAction;
+
+  /// Falha ao carregar as tarefas
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível carregar as tarefas.'**
+  String get tasksLoadError;
+
+  /// Falha de rede numa operação de tarefa
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem conexão. Verifique a internet e tente de novo.'**
+  String get taskErrorNetwork;
+
+  /// Servidor recusou o acesso às tarefas
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem permissão para acessar as tarefas. Entre novamente.'**
+  String get taskErrorPermission;
+
+  /// A tarefa foi excluída em outro lugar
+  ///
+  /// In pt, this message translates to:
+  /// **'Esta tarefa não existe mais.'**
+  String get taskErrorNotFound;
+
+  /// Falha inesperada numa operação de tarefa
+  ///
+  /// In pt, this message translates to:
+  /// **'Algo deu errado. Tente de novo.'**
+  String get taskErrorUnknown;
+
+  /// Título do formulário de criação
+  ///
+  /// In pt, this message translates to:
+  /// **'Nova tarefa'**
+  String get taskFormNewTitle;
+
+  /// Título do formulário de edição
+  ///
+  /// In pt, this message translates to:
+  /// **'Editar tarefa'**
+  String get taskFormEditTitle;
+
+  /// Rótulo do campo de título
+  ///
+  /// In pt, this message translates to:
+  /// **'Título'**
+  String get taskFormTitleLabel;
+
+  /// Rótulo do campo de descrição
+  ///
+  /// In pt, this message translates to:
+  /// **'Descrição'**
+  String get taskFormDescriptionLabel;
+
+  /// Erro de validação: título vazio
+  ///
+  /// In pt, this message translates to:
+  /// **'Informe o título'**
+  String get taskFormTitleRequired;
+
+  /// Valor exibido quando a tarefa não tem data
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem data'**
+  String get taskFormNoDueDate;
+
+  /// Botão que abre o seletor de data
+  ///
+  /// In pt, this message translates to:
+  /// **'Escolher data'**
+  String get taskFormPickDate;
+
+  /// Dica do botão que remove a data
+  ///
+  /// In pt, this message translates to:
+  /// **'Remover data'**
+  String get taskFormClearDate;
+
+  /// Botão que salva a tarefa
+  ///
+  /// In pt, this message translates to:
+  /// **'Salvar'**
+  String get taskFormSave;
 }
 
 class _AppLocalizationsDelegate

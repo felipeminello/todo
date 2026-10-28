@@ -3,5 +3,216 @@
   "appTitle": "Minhas Tarefas",
   "@appTitle": {
     "description": "Título do aplicativo"
+  },
+  "loadingLabel": "Carregando",
+  "@loadingLabel": {
+    "description": "Rótulo de acessibilidade do indicador de carregamento"
+  },
+  "authSignInTitle": "Entrar",
+  "@authSignInTitle": {
+    "description": "Título da tela de login"
+  },
+  "authSignUpTitle": "Criar conta",
+  "@authSignUpTitle": {
+    "description": "Título da tela de cadastro"
+  },
+  "authEmailLabel": "E-mail",
+  "@authEmailLabel": {
+    "description": "Rótulo do campo de e-mail"
+  },
+  "authPasswordLabel": "Senha",
+  "@authPasswordLabel": {
+    "description": "Rótulo do campo de senha"
+  },
+  "authSignInButton": "Entrar",
+  "@authSignInButton": {
+    "description": "Botão que envia o login"
+  },
+  "authSignUpButton": "Criar conta",
+  "@authSignUpButton": {
+    "description": "Botão que envia o cadastro"
+  },
+  "authSwitchToSignUp": "Não tem conta? Criar conta",
+  "@authSwitchToSignUp": {
+    "description": "Alterna do login para o cadastro"
+  },
+  "authSwitchToSignIn": "Já tem conta? Entrar",
+  "@authSwitchToSignIn": {
+    "description": "Alterna do cadastro para o login"
+  },
+  "authEmailRequired": "Informe o e-mail",
+  "@authEmailRequired": {
+    "description": "Erro de validação: e-mail vazio"
+  },
+  "authEmailInvalid": "E-mail inválido",
+  "@authEmailInvalid": {
+    "description": "Erro de validação: e-mail malformado"
+  },
+  "authPasswordRequired": "Informe a senha",
+  "@authPasswordRequired": {
+    "description": "Erro de validação: senha vazia"
+  },
+  "authErrorInvalidCredentials": "E-mail ou senha incorretos.",
+  "@authErrorInvalidCredentials": {
+    "description": "Login recusado; não revela se o e-mail existe"
+  },
+  "authErrorEmailInUse": "Este e-mail já está em uso.",
+  "@authErrorEmailInUse": {
+    "description": "Cadastro recusado: e-mail já cadastrado"
+  },
+  "authErrorWeakPassword": "Senha fraca. Use pelo menos 6 caracteres.",
+  "@authErrorWeakPassword": {
+    "description": "Cadastro recusado: senha fraca"
+  },
+  "authErrorInvalidEmail": "E-mail inválido.",
+  "@authErrorInvalidEmail": {
+    "description": "Provedor recusou o formato do e-mail"
+  },
+  "authErrorNetwork": "Sem conexão. Verifique a internet e tente de novo.",
+  "@authErrorNetwork": {
+    "description": "Falha de rede no login ou cadastro"
+  },
+  "authErrorUnknown": "Não foi possível concluir. Tente de novo.",
+  "@authErrorUnknown": {
+    "description": "Falha inesperada no login ou cadastro"
+  },
+  "signOutTooltip": "Sair",
+  "@signOutTooltip": {
+    "description": "Dica do botão de logout"
+  },
+  "refreshTooltip": "Atualizar",
+  "@refreshTooltip": {
+    "description": "Dica do botão que recarrega as tarefas"
+  },
+  "addTaskTooltip": "Nova tarefa",
+  "@addTaskTooltip": {
+    "description": "Dica do botão que cria uma tarefa"
+  },
+  "tasksEmptyTitle": "Nenhuma tarefa ainda",
+  "@tasksEmptyTitle": {
+    "description": "Título do estado vazio"
+  },
+  "tasksEmptyMessage": "Use o botão + para criar a primeira tarefa.",
+  "@tasksEmptyMessage": {
+    "description": "Convite do estado vazio"
+  },
+  "tasksUndatedHeader": "Sem data",
+  "@tasksUndatedHeader": {
+    "description": "Cabeçalho do bloco de tarefas sem data"
+  },
+  "tasksOverdueLabel": "Atrasada",
+  "@tasksOverdueLabel": {
+    "description": "Rótulo do destaque de atraso"
+  },
+  "tasksDayOverdueSemantics": "{date}, tarefas atrasadas",
+  "@tasksDayOverdueSemantics": {
+    "description": "Anúncio do leitor de tela para um dia atrasado",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksCompletedHeader": "Concluídas ({count})",
+  "@tasksCompletedHeader": {
+    "description": "Cabeçalho da lista de concluídas com a quantidade",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskMarkDone": "Marcar como concluída",
+  "@taskMarkDone": {
+    "description": "Rótulo da caixa de seleção de uma tarefa pendente"
+  },
+  "taskMarkPending": "Marcar como pendente",
+  "@taskMarkPending": {
+    "description": "Rótulo da caixa de seleção de uma tarefa concluída"
+  },
+  "taskDeleteTooltip": "Excluir tarefa",
+  "@taskDeleteTooltip": {
+    "description": "Dica do botão de excluir"
+  },
+  "taskDeleteDialogTitle": "Excluir tarefa?",
+  "@taskDeleteDialogTitle": {
+    "description": "Título da confirmação de exclusão"
+  },
+  "taskDeleteDialogMessage": "\"{title}\" será excluída permanentemente.",
+  "@taskDeleteDialogMessage": {
+    "description": "Mensagem da confirmação de exclusão",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelAction": "Cancelar",
+  "@cancelAction": {
+    "description": "Ação de cancelar"
+  },
+  "deleteAction": "Excluir",
+  "@deleteAction": {
+    "description": "Ação de excluir"
+  },
+  "retryAction": "Tentar de novo",
+  "@retryAction": {
+    "description": "Ação de repetir após falha"
+  },
+  "tasksLoadError": "Não foi possível carregar as tarefas.",
+  "@tasksLoadError": {
+    "description": "Falha ao carregar as tarefas"
+  },
+  "taskErrorNetwork": "Sem conexão. Verifique a internet e tente de novo.",
+  "@taskErrorNetwork": {
+    "description": "Falha de rede numa operação de tarefa"
+  },
+  "taskErrorPermission": "Sem permissão para acessar as tarefas. Entre novamente.",
+  "@taskErrorPermission": {
+    "description": "Servidor recusou o acesso às tarefas"
+  },
+  "taskErrorNotFound": "Esta tarefa não existe mais.",
+  "@taskErrorNotFound": {
+    "description": "A tarefa foi excluída em outro lugar"
+  },
+  "taskErrorUnknown": "Algo deu errado. Tente de novo.",
+  "@taskErrorUnknown": {
+    "description": "Falha inesperada numa operação de tarefa"
+  },
+  "taskFormNewTitle": "Nova tarefa",
+  "@taskFormNewTitle": {
+    "description": "Título do formulário de criação"
+  },
+  "taskFormEditTitle": "Editar tarefa",
+  "@taskFormEditTitle": {
+    "description": "Título do formulário de edição"
+  },
+  "taskFormTitleLabel": "Título",
+  "@taskFormTitleLabel": {
+    "description": "Rótulo do campo de título"
+  },
+  "taskFormDescriptionLabel": "Descrição",
+  "@taskFormDescriptionLabel": {
+    "description": "Rótulo do campo de descrição"
+  },
+  "taskFormTitleRequired": "Informe o título",
+  "@taskFormTitleRequired": {
+    "description": "Erro de validação: título vazio"
+  },
+  "taskFormNoDueDate": "Sem data",
+  "@taskFormNoDueDate": {
+    "description": "Valor exibido quando a tarefa não tem data"
+  },
+  "taskFormPickDate": "Escolher data",
+  "@taskFormPickDate": {
+    "description": "Botão que abre o seletor de data"
+  },
+  "taskFormClearDate": "Remover data",
+  "@taskFormClearDate": {
+    "description": "Dica do botão que remove a data"
+  },
+  "taskFormSave": "Salvar",
+  "@taskFormSave": {
+    "description": "Botão que salva a tarefa"
   }
 }

@@ -40,6 +40,11 @@ dependencies:
   intl: ^0.20.3
   flutter_localizations:
     sdk: flutter
+  firebase_core: ^5.1.0
+  firebase_auth: ^7.0.1
+  cloud_firestore: ^7.1.0
+  http: ^1.6.0
+  flutter_secure_storage: ^11.2.0
 
 dev_dependencies:
   flutter_test:
