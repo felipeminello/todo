@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- iOS / Android legado: arte sangrada e opaca; o sistema aplica a mascara -->
+  <defs>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
+    <filter id="blurS" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DCD0F5"/></linearGradient>
+    <radialGradient id="glow" cx=".22" cy=".12" r=".85">
+      <stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#ECE5FB"/></linearGradient>
+    <linearGradient id="box" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9C78E3"/><stop offset="1" stop-color="#5A32AE"/></linearGradient>
+    <linearGradient id="c3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D2C4F1"/><stop offset="1" stop-color="#B49EE6"/></linearGradient>
+    <linearGradient id="c2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#AC8FE8"/><stop offset="1" stop-color="#8460CF"/></linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <g transform="translate(512 520) scale(1.32) translate(-512 -500)">
+    <!-- back card -->
+    <rect x="372" y="292" width="280" height="200" rx="40" fill="#2A1167" opacity=".16" transform="translate(0 20)" filter="url(#blurS)"/>
+    <rect x="372" y="292" width="280" height="200" rx="40" fill="url(#c3)"/>
+    <!-- middle card -->
+    <rect x="334" y="336" width="356" height="240" rx="46" fill="#2A1167" opacity=".22" transform="translate(0 24)" filter="url(#blurS)"/>
+    <rect x="334" y="336" width="356" height="240" rx="46" fill="url(#c2)"/>
+    <!-- front card: cast shadow, extruded side, face -->
+    <rect x="297" y="390" width="430" height="300" rx="56" fill="#2A1167" opacity=".34" transform="translate(6 40)" filter="url(#blur)"/>
+    <rect x="297" y="390" width="430" height="300" rx="56" fill="#BFAEE9" transform="translate(0 16)"/>
+    <rect x="297" y="390" width="430" height="300" rx="56" fill="url(#face)"/>
+    <!-- checked row -->
+    <rect x="340" y="432" width="96" height="96" rx="26" fill="#3B1C8C" transform="translate(0 8)"/>
+    <rect x="340" y="432" width="96" height="96" rx="26" fill="url(#box)"/>
+    <rect x="350" y="438" width="76" height="30" rx="15" fill="#fff" opacity=".22"/>
+    <path d="M364 481 L382 499 L413 462" fill="none" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" stroke="#fff"/>
+    <rect x="470" y="448" width="210" height="24" rx="12" fill="#D3C7F0"/>
+    <rect x="470" y="488" width="140" height="20" rx="10" fill="#E6DEF7"/>
+    <!-- open row -->
+    <rect x="346" y="570" width="84" height="84" rx="22" fill="#F7F4FE" stroke="#BCA9EA" stroke-width="12"/>
+    <rect x="470" y="580" width="190" height="24" rx="12" fill="#D3C7F0"/>
+    <rect x="470" y="620" width="120" height="20" rx="10" fill="#E6DEF7"/>
+  </g>
+</svg>

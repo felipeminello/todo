@@ -1,0 +1,25 @@
+# Configuração do flutter_launcher_icons, que gera só Android e iOS.
+# Não rode a ferramenta direto: use `dart run tool/app_icon/generate.dart`,
+# que também gera macOS e Windows (ver tool/app_icon/README.md).
+flutter_launcher_icons:
+  image_path: "assets/icon/png/full_1024.png"
+
+  android: true
+  min_sdk_android: 24
+  adaptive_icon_background: "assets/icon/png/adaptive_bg_1024.png"
+  adaptive_icon_foreground: "assets/icon/png/adaptive_fg_1024.png"
+  # A pilha já foi desenhada dentro da zona segura de 66 dp; o inset padrão (16%) a encolheria.
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: "assets/icon/png/monochrome_1024.png"
+
+  ios: true
+  remove_alpha_ios: true
+
+  # macOS e Windows usam uma arte diferente por faixa de tamanho, o que a
+  # ferramenta não faz; o script próprio cuida deles.
+  macos:
+    generate: false
+  windows:
+    generate: false
+  web:
+    generate: false

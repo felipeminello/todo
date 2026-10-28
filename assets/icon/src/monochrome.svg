@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Android 13+ icone tematico: silhueta; o sistema usa so o alfa -->
+  <defs>
+    <mask id="behindMiddle">
+      <rect width="1024" height="1024" fill="#fff"/>
+      <rect x="334" y="336" width="356" height="240" rx="46" fill="#000" stroke="#000" stroke-width="36"/>
+      <rect x="297" y="390" width="430" height="300" rx="56" fill="#000" stroke="#000" stroke-width="36"/>
+    </mask>
+    <mask id="behindFront">
+      <rect width="1024" height="1024" fill="#fff"/>
+      <rect x="297" y="390" width="430" height="300" rx="56" fill="#000" stroke="#000" stroke-width="36"/>
+    </mask>
+    <mask id="checkCut">
+      <rect width="1024" height="1024" fill="#fff"/>
+      <path d="M432 548 L492 604 L598 486" fill="none" stroke-width="48" stroke-linecap="round" stroke-linejoin="round" stroke="#000"/>
+    </mask>
+  </defs>
+  <rect x="372" y="292" width="280" height="200" rx="40" fill="#fff" mask="url(#behindMiddle)"/>
+  <rect x="334" y="336" width="356" height="240" rx="46" fill="#fff" mask="url(#behindFront)"/>
+  <rect x="297" y="390" width="430" height="300" rx="56" fill="#fff" mask="url(#checkCut)"/>
+</svg>

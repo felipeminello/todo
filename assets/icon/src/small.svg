@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- macOS 16/32 e Windows 16/24/32: dois cartoes e a caixa marcada -->
+  <defs>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
+    <filter id="blurS" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10"/></filter>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9E1FA"/><stop offset="1" stop-color="#BFAAEC"/></linearGradient>
+    <radialGradient id="glow" cx=".22" cy=".12" r=".85">
+      <stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#ECE5FB"/></linearGradient>
+    <linearGradient id="box" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9C78E3"/><stop offset="1" stop-color="#5A32AE"/></linearGradient>
+    <linearGradient id="c3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D2C4F1"/><stop offset="1" stop-color="#B49EE6"/></linearGradient>
+    <linearGradient id="c2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#AC8FE8"/><stop offset="1" stop-color="#8460CF"/></linearGradient>
+    <filter id="tileShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="22" stdDeviation="22" flood-color="#12062E" flood-opacity=".38"/>
+    </filter>
+    <clipPath id="tile"><path d="M1024.0 512.0 L1023.7 669.3 L1022.9 719.5 L1021.5 755.8 L1019.5 785.2 L1016.9 810.2 L1013.8 832.1 L1010.1 851.6 L1005.8 869.3 L1000.9 885.3 L995.4 900.0 L989.2 913.5 L982.4 926.0 L974.9 937.4 L966.7 948.0 L957.7 957.7 L948.0 966.7 L937.4 974.9 L926.0 982.4 L913.5 989.2 L900.0 995.4 L885.3 1000.9 L869.3 1005.8 L851.6 1010.1 L832.1 1013.8 L810.2 1016.9 L785.2 1019.5 L755.8 1021.5 L719.5 1022.9 L669.3 1023.7 L512.0 1024.0 L354.7 1023.7 L304.5 1022.9 L268.2 1021.5 L238.8 1019.5 L213.8 1016.9 L191.9 1013.8 L172.4 1010.1 L154.7 1005.8 L138.7 1000.9 L124.0 995.4 L110.5 989.2 L98.0 982.4 L86.6 974.9 L76.0 966.7 L66.3 957.7 L57.3 948.0 L49.1 937.4 L41.6 926.0 L34.8 913.5 L28.6 900.0 L23.1 885.3 L18.2 869.3 L13.9 851.6 L10.2 832.1 L7.1 810.2 L4.5 785.2 L2.5 755.8 L1.1 719.5 L0.3 669.3 L0.0 512.0 L0.3 354.7 L1.1 304.5 L2.5 268.2 L4.5 238.8 L7.1 213.8 L10.2 191.9 L13.9 172.4 L18.2 154.7 L23.1 138.7 L28.6 124.0 L34.8 110.5 L41.6 98.0 L49.1 86.6 L57.3 76.0 L66.3 66.3 L76.0 57.3 L86.6 49.1 L98.0 41.6 L110.5 34.8 L124.0 28.6 L138.7 23.1 L154.7 18.2 L172.4 13.9 L191.9 10.2 L213.8 7.1 L238.8 4.5 L268.2 2.5 L304.5 1.1 L354.7 0.3 L512.0 0.0 L669.3 0.3 L719.5 1.1 L755.8 2.5 L785.2 4.5 L810.2 7.1 L832.1 10.2 L851.6 13.9 L869.3 18.2 L885.3 23.1 L900.0 28.6 L913.5 34.8 L926.0 41.6 L937.4 49.1 L948.0 57.3 L957.7 66.3 L966.7 76.0 L974.9 86.6 L982.4 98.0 L989.2 110.5 L995.4 124.0 L1000.9 138.7 L1005.8 154.7 L1010.1 172.4 L1013.8 191.9 L1016.9 213.8 L1019.5 238.8 L1021.5 268.2 L1022.9 304.5 L1023.7 354.7Z"/></clipPath>
+  </defs>
+  <g filter="url(#tileShadow)">
+    <g transform="translate(100 100) scale(0.8046875)">
+      <g clip-path="url(#tile)">
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <!-- two cards and one big checkbox: the only details that survive at 16 px -->
+  <rect x="230" y="196" width="564" height="300" rx="84" fill="#2A1167" opacity=".25" transform="translate(0 24)" filter="url(#blurS)"/>
+  <rect x="230" y="196" width="564" height="300" rx="84" fill="url(#c2)"/>
+  <rect x="170" y="330" width="684" height="470" rx="100" fill="#2A1167" opacity=".38" transform="translate(0 40)" filter="url(#blur)"/>
+  <rect x="170" y="330" width="684" height="470" rx="100" fill="#A892E0" transform="translate(0 22)"/>
+  <rect x="170" y="330" width="684" height="470" rx="100" fill="url(#face)"/>
+  <rect x="382" y="445" width="260" height="260" rx="72" fill="#3B1C8C" transform="translate(0 14)"/>
+  <rect x="382" y="445" width="260" height="260" rx="72" fill="url(#box)"/>
+  <path d="M445 578 L500 632 L590 520" fill="none" stroke-width="50" stroke-linecap="round" stroke-linejoin="round" stroke="#fff"/>
+      </g>
+    </g>
+  </g>
+</svg>
