@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:todo/core/ui/widgets/brand_background.dart';
+import 'package:todo/core/ui/widgets/brand_button.dart';
+import 'package:todo/core/ui/widgets/task_stack_illustration.dart';
 import 'package:todo/features/auth/domain/entities/credentials.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:todo/features/auth/presentation/widgets/auth_failure_message.dart';
@@ -40,98 +43,109 @@ class _AuthPageState extends State<AuthPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final title = _isSignUp ? l10n.authSignUpTitle : l10n.authSignInTitle;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) => Form(
-                  key: _formKey,
-                  child: AutofillGroup(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          l10n.appTitle,
-                          style: Theme.of(context).textTheme.headlineMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          title,
-                          style: Theme.of(context).textTheme.titleMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        TextFormField(
-                          key: const Key('auth-email'),
-                          controller: _email,
-                          decoration: InputDecoration(
-                            labelText: l10n.authEmailLabel,
+      body: BrandBackground(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) => Form(
+                    key: _formKey,
+                    child: AutofillGroup(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Align(
+                            alignment: Alignment.centerLeft,
+                            child: TaskStackIllustration(),
                           ),
-                          keyboardType: TextInputType.emailAddress,
-                          autofillHints: const [AutofillHints.email],
-                          textInputAction: TextInputAction.next,
-                          enabled: !state.isSubmitting,
-                          validator: (value) {
-                            final email = value?.trim() ?? '';
-                            if (email.isEmpty) return l10n.authEmailRequired;
-                            if (!Credentials.isValidEmail(email)) {
-                              return l10n.authEmailInvalid;
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          key: const Key('auth-password'),
-                          controller: _password,
-                          decoration: InputDecoration(
-                            labelText: l10n.authPasswordLabel,
+                          const SizedBox(height: 28),
+                          Semantics(
+                            header: true,
+                            child: Text(
+                              l10n.appTitle,
+                              style: theme.textTheme.headlineLarge,
+                            ),
                           ),
-                          obscureText: true,
-                          autofillHints: [
-                            _isSignUp
-                                ? AutofillHints.newPassword
-                                : AutofillHints.password,
-                          ],
-                          textInputAction: TextInputAction.done,
-                          enabled: !state.isSubmitting,
-                          onFieldSubmitted: (_) => _submit(),
-                          validator: (value) => (value ?? '').isEmpty
-                              ? l10n.authPasswordRequired
-                              : null,
-                        ),
-                        if (state.failure case final failure?) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            title,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          TextFormField(
+                            key: const Key('auth-email'),
+                            controller: _email,
+                            decoration: InputDecoration(
+                              labelText: l10n.authEmailLabel,
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                            autofillHints: const [AutofillHints.email],
+                            textInputAction: TextInputAction.next,
+                            enabled: !state.isSubmitting,
+                            validator: (value) {
+                              final email = value?.trim() ?? '';
+                              if (email.isEmpty) return l10n.authEmailRequired;
+                              if (!Credentials.isValidEmail(email)) {
+                                return l10n.authEmailInvalid;
+                              }
+                              return null;
+                            },
+                          ),
                           const SizedBox(height: 16),
-                          _AuthError(
-                            message: authFailureMessage(l10n, failure),
+                          TextFormField(
+                            key: const Key('auth-password'),
+                            controller: _password,
+                            decoration: InputDecoration(
+                              labelText: l10n.authPasswordLabel,
+                            ),
+                            obscureText: true,
+                            autofillHints: [
+                              _isSignUp
+                                  ? AutofillHints.newPassword
+                                  : AutofillHints.password,
+                            ],
+                            textInputAction: TextInputAction.done,
+                            enabled: !state.isSubmitting,
+                            onFieldSubmitted: (_) => _submit(),
+                            validator: (value) => (value ?? '').isEmpty
+                                ? l10n.authPasswordRequired
+                                : null,
+                          ),
+                          if (state.failure case final failure?) ...[
+                            const SizedBox(height: 16),
+                            _AuthError(
+                              message: authFailureMessage(l10n, failure),
+                            ),
+                          ],
+                          const SizedBox(height: 24),
+                          _SubmitButton(
+                            label: _isSignUp
+                                ? l10n.authSignUpButton
+                                : l10n.authSignInButton,
+                            isSubmitting: state.isSubmitting,
+                            onPressed: _submit,
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: state.isSubmitting
+                                ? null
+                                : () => setState(() => _isSignUp = !_isSignUp),
+                            child: Text(
+                              _isSignUp
+                                  ? l10n.authSwitchToSignIn
+                                  : l10n.authSwitchToSignUp,
+                            ),
                           ),
                         ],
-                        const SizedBox(height: 24),
-                        _SubmitButton(
-                          label: _isSignUp
-                              ? l10n.authSignUpButton
-                              : l10n.authSignInButton,
-                          isSubmitting: state.isSubmitting,
-                          onPressed: _submit,
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: state.isSubmitting
-                              ? null
-                              : () => setState(() => _isSignUp = !_isSignUp),
-                          child: Text(
-                            _isSignUp
-                                ? l10n.authSwitchToSignIn
-                                : l10n.authSwitchToSignUp,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -151,13 +165,36 @@ class _AuthError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Semantics(
       liveRegion: true,
-      child: Text(
-        message,
-        style: TextStyle(color: colors.error),
-        textAlign: TextAlign.center,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.errorContainer,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 20,
+                color: colors.onErrorContainer,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onErrorContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -176,14 +213,14 @@ class _SubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
+    return BrandButton(
       onPressed: isSubmitting ? null : onPressed,
-      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
       child: isSubmitting
           ? SizedBox.square(
               dimension: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
+                color: Colors.white,
                 semanticsLabel: AppLocalizations.of(context).loadingLabel,
               ),
             )

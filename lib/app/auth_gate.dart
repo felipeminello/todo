@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:todo/core/ui/widgets/brand_background.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:todo/features/auth/presentation/pages/auth_page.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
@@ -42,9 +43,11 @@ class _Splash extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(
-          semanticsLabel: AppLocalizations.of(context).loadingLabel,
+      body: BrandBackground(
+        child: Center(
+          child: CircularProgressIndicator(
+            semanticsLabel: AppLocalizations.of(context).loadingLabel,
+          ),
         ),
       ),
     );

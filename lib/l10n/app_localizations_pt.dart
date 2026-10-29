@@ -90,6 +90,31 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tasksOverdueLabel => 'Atrasada';
 
   @override
+  String get tasksTodayLabel => 'Hoje';
+
+  @override
+  String tasksDayTodaySemantics(String date) {
+    return '$date, hoje';
+  }
+
+  @override
+  String tasksSummary(int pending, int completed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      pending,
+      locale: localeName,
+      other: '$pending pendentes',
+      one: '1 pendente',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      completed,
+      locale: localeName,
+      other: '$completed concluídas',
+      one: '1 concluída',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
   String tasksDayOverdueSemantics(String date) {
     return '$date, tarefas atrasadas';
   }

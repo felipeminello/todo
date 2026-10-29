@@ -61,13 +61,12 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
     if (pending != state) emit(pending);
     try {
       final tasks = await _getTasks();
+      final today = CalendarDate.fromLocal(_clock.now());
       emit(
         state.copyWith(
           status: TasksStatus.loaded,
-          timeline: _buildTimeline(
-            tasks,
-            today: CalendarDate.fromLocal(_clock.now()),
-          ),
+          timeline: _buildTimeline(tasks, today: today),
+          today: today,
           loadFailure: () => null,
           isRefreshing: false,
         ),

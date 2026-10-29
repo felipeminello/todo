@@ -36,6 +36,7 @@ final class BuildTaskTimeline {
           DayGroup(
             date: date,
             isOverdue: date.isBefore(today),
+            isToday: date == today,
             tasks: List.unmodifiable(dayTasks..sort(_byCreation)),
           ),
       ]),

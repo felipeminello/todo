@@ -250,6 +250,24 @@ abstract class AppLocalizations {
   /// **'Atrasada'**
   String get tasksOverdueLabel;
 
+  /// Rótulo do destaque do dia de hoje na linha do tempo
+  ///
+  /// In pt, this message translates to:
+  /// **'Hoje'**
+  String get tasksTodayLabel;
+
+  /// Anúncio do leitor de tela para o dia de hoje
+  ///
+  /// In pt, this message translates to:
+  /// **'{date}, hoje'**
+  String tasksDayTodaySemantics(String date);
+
+  /// Resumo no cabeçalho com a quantidade de tarefas pendentes e concluídas
+  ///
+  /// In pt, this message translates to:
+  /// **'{pending, plural, =1{1 pendente} other{{pending} pendentes}} · {completed, plural, =1{1 concluída} other{{completed} concluídas}}'**
+  String tasksSummary(int pending, int completed);
+
   /// Anúncio do leitor de tela para um dia atrasado
   ///
   /// In pt, this message translates to:

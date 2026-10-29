@@ -21,6 +21,9 @@ final class TaskTimeline extends Equatable {
 
   bool get isEmpty => undated.isEmpty && days.isEmpty && completed.isEmpty;
 
+  int get pendingCount =>
+      undated.length + days.fold(0, (sum, group) => sum + group.tasks.length);
+
   @override
   List<Object> get props => [undated, days, completed];
 }
@@ -29,6 +32,7 @@ final class DayGroup extends Equatable {
   const DayGroup({
     required this.date,
     required this.isOverdue,
+    required this.isToday,
     required this.tasks,
   });
 
@@ -38,9 +42,11 @@ final class DayGroup extends Equatable {
   /// them are overdue.
   final bool isOverdue;
 
+  final bool isToday;
+
   /// Oldest created first.
   final List<Task> tasks;
 
   @override
-  List<Object> get props => [date, isOverdue, tasks];
+  List<Object> get props => [date, isOverdue, isToday, tasks];
 }

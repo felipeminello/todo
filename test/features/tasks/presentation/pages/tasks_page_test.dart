@@ -17,6 +17,8 @@ import 'package:todo/features/tasks/domain/usecases/update_task.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:todo/features/tasks/presentation/pages/tasks_page.dart';
 import 'package:todo/features/tasks/presentation/theme/task_status_colors.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_form.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_form_sheet.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_tile.dart';
 
 import '../../../../helpers/fake_task_remote_data_source.dart';
@@ -88,7 +90,7 @@ void main() {
 
     expect(topOf(tester, 'Sem data'), lessThan(topOf(tester, 'Indefinida')));
     expect(topOf(tester, 'Indefinida'), lessThan(topOf(tester, 'Com data')));
-    expect(find.text('sex., 30 de out. de 2026'), findsOneWidget);
+    expect(find.text('sexta-feira'), findsOneWidget);
     expect(
       topOf(tester, 'Com data'),
       lessThan(topOf(tester, 'Concluídas (1)')),
@@ -123,12 +125,13 @@ void main() {
     ]);
     await pump(tester);
 
-    final overdueDate = find.text('dom., 25 de out. de 2026');
-    final futureDate = find.text('qua., 28 de out. de 2026');
+    final overdueDate = find.text('25');
+    final futureDate = find.text('28');
     expect(
       tester.getTopLeft(overdueDate).dy,
       lessThan(tester.getTopLeft(futureDate).dy),
     );
+    expect(topOf(tester, 'domingo'), lessThan(topOf(tester, 'quarta-feira')));
     expect(find.text('Atrasada'), findsOneWidget);
     expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     expect(
@@ -204,7 +207,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Concluídas'), findsNothing);
-    expect(find.text('sex., 30 de out. de 2026'), findsOneWidget);
+    expect(find.text('sexta-feira'), findsOneWidget);
     expect(find.text('Reabrir'), findsOneWidget);
   });
 
@@ -240,7 +243,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Excluir tarefa'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, 'Excluir'));
+    await tester.tap(find.text('Excluir'));
     await tester.pumpAndSettle();
 
     expect(find.text('Apagar'), findsNothing);
@@ -307,15 +310,29 @@ void main() {
       );
     });
 
-    testWidgets('centers the list at a readable width on a wide window', (
+    testWidgets('centers the list at a readable width below two panes', (
+      tester,
+    ) async {
+      await seed([buildTask('1', title: 'Larga')]);
+      await pump(tester, size: const Size(900, 900));
+
+      final tile = tester.getRect(find.byType(TaskTile));
+      expect(tile.width, lessThanOrEqualTo(720));
+      expect(tile.center.dx, closeTo(450, 1));
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
+
+    testWidgets('a wide window shows the editor beside the list', (
       tester,
     ) async {
       await seed([buildTask('1', title: 'Larga')]);
       await pump(tester, size: const Size(1600, 900));
 
+      expect(tester.takeException(), isNull);
+      expect(find.byType(FloatingActionButton), findsNothing);
+      final form = tester.getRect(find.byType(TaskForm));
       final tile = tester.getRect(find.byType(TaskTile));
-      expect(tile.width, lessThanOrEqualTo(720));
-      expect(tile.center.dx, closeTo(800, 1));
+      expect(tile.right, lessThan(form.left));
     });
   });
 
@@ -395,7 +412,7 @@ void main() {
     addTearDown(bloc.close);
     await tester.pumpWidget(
       localizedApp(
-        theme: AppTheme.dark,
+        theme: AppTheme.dark(),
         home: BlocProvider.value(value: bloc, child: const TasksPage()),
       ),
     );
@@ -405,5 +422,103 @@ void main() {
       tester.widget<Text>(find.text('Atrasada')).style?.color,
       TaskStatusColors.dark.overdue,
     );
+  });
+
+  group('header', () {
+    testWidgets('shows today and how many tasks there are', (tester) async {
+      await seed([
+        buildTask('1'),
+        buildTask('2', dueDate: CalendarDate(2026, 10, 30)),
+        buildTask('3', completedMinute: 1),
+      ]);
+      await pump(tester);
+
+      expect(find.text('Terça-feira, 27 de outubro'), findsOneWidget);
+      expect(find.text('2 pendentes · 1 concluída'), findsOneWidget);
+    });
+
+    testWidgets('the summary waits for the list to load', (tester) async {
+      dataSource.failNext = const RemoteException(RemoteErrorKind.network);
+      await pump(tester);
+
+      expect(find.textContaining('pendente'), findsNothing);
+    });
+  });
+
+  testWidgets('today is marked with a label and announced', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await seed([
+      buildTask('1', dueDate: CalendarDate(2026, 10, 27)),
+      buildTask('2', dueDate: CalendarDate(2026, 10, 28)),
+    ]);
+    await pump(tester);
+
+    expect(find.text('Hoje'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('terça-feira, 27 de outubro de 2026, hoje'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('quarta-feira, 28 de outubro de 2026'),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
+  group('wide window', () {
+    const wide = Size(1600, 900);
+
+    testWidgets('tapping a task edits it in the panel, not in a sheet', (
+      tester,
+    ) async {
+      await seed([buildTask('1', title: 'Original')]);
+      await pump(tester, size: wide);
+
+      await tester.tap(find.text('Original'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskFormSheet), findsNothing);
+      expect(find.text('Editar tarefa'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const Key('task-form-title')),
+        'Editada',
+      );
+      await tester.tap(find.byKey(const Key('task-form-save')));
+      await tester.pumpAndSettle();
+
+      expect((await dataSource.getAll()).single.title, 'Editada');
+      expect(find.text('Editar tarefa'), findsNothing);
+    });
+
+    testWidgets('the panel creates a task when none is selected', (
+      tester,
+    ) async {
+      await pump(tester, size: wide);
+
+      await tester.enterText(find.byKey(const Key('task-form-title')), 'Nova');
+      await tester.tap(find.byKey(const Key('task-form-save')));
+      await tester.pumpAndSettle();
+
+      expect((await dataSource.getAll()).single.title, 'Nova');
+      expect(find.widgetWithText(TaskTile, 'Nova'), findsOneWidget);
+    });
+
+    testWidgets('deleting the task being edited clears the panel', (
+      tester,
+    ) async {
+      await seed([buildTask('1', title: 'Apagar')]);
+      await pump(tester, size: wide);
+      await tester.tap(find.text('Apagar'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Excluir tarefa'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Excluir'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Editar tarefa'), findsNothing);
+      expect(await dataSource.getAll(), isEmpty);
+    });
   });
 }

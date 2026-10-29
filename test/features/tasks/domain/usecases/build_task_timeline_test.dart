@@ -205,4 +205,27 @@ void main() {
 
     expect(ids(timeline([reopened]).undated), ['r']);
   });
+
+  test('only the group of today is marked as today', () {
+    final result = timeline([
+      buildTask('yesterday', dueDate: CalendarDate(2026, 10, 26)),
+      buildTask('today', dueDate: today),
+      buildTask('tomorrow', dueDate: CalendarDate(2026, 10, 28)),
+    ]);
+
+    expect([for (final g in result.days) g.isToday], [false, true, false]);
+  });
+
+  test('pending count adds undated and dated tasks, not completed ones', () {
+    final result = timeline([
+      buildTask('undated'),
+      buildTask('a', dueDate: CalendarDate(2026, 10, 30)),
+      buildTask('b', dueDate: CalendarDate(2026, 10, 30)),
+      buildTask('c', dueDate: CalendarDate(2026, 11, 2)),
+      buildTask('done', completedMinute: 5),
+    ]);
+
+    expect(result.pendingCount, 4);
+    expect(timeline([]).pendingCount, 0);
+  });
 }

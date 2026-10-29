@@ -6,6 +6,7 @@ final class TasksState extends Equatable {
   const TasksState({
     this.status = TasksStatus.loading,
     this.timeline = const TaskTimeline(),
+    this.today,
     this.loadFailure,
     this.isRefreshing = false,
     this.actionFailure,
@@ -16,6 +17,9 @@ final class TasksState extends Equatable {
   /// The last successfully loaded tasks, kept while refreshing or after a
   /// failed change.
   final TaskTimeline timeline;
+
+  /// The day [timeline] was built for, as the device saw it.
+  final CalendarDate? today;
 
   /// Why the first load failed; set only when [status] is
   /// [TasksStatus.failure].
@@ -31,6 +35,7 @@ final class TasksState extends Equatable {
   TasksState copyWith({
     TasksStatus? status,
     TaskTimeline? timeline,
+    CalendarDate? today,
     TaskFailureReason? Function()? loadFailure,
     bool? isRefreshing,
     TaskActionFailure? actionFailure,
@@ -38,6 +43,7 @@ final class TasksState extends Equatable {
     return TasksState(
       status: status ?? this.status,
       timeline: timeline ?? this.timeline,
+      today: today ?? this.today,
       loadFailure: loadFailure != null ? loadFailure() : this.loadFailure,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       actionFailure: actionFailure ?? this.actionFailure,
@@ -48,6 +54,7 @@ final class TasksState extends Equatable {
   List<Object?> get props => [
     status,
     timeline,
+    today,
     loadFailure,
     isRefreshing,
     actionFailure,

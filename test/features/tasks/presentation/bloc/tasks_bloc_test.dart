@@ -44,6 +44,7 @@ void main() {
       TasksState(
         status: TasksStatus.loaded,
         timeline: timelineOf(tasks),
+        today: today,
         actionFailure: failure,
       );
 
@@ -78,8 +79,10 @@ void main() {
       expect: () => [
         loaded([pending, overdue]),
       ],
-      verify: (bloc) =>
-          expect(bloc.state.timeline.days.first.isOverdue, isTrue),
+      verify: (bloc) {
+        expect(bloc.state.timeline.days.first.isOverdue, isTrue);
+        expect(bloc.state.today, today);
+      },
     );
 
     blocTest<TasksBloc, TasksState>(
@@ -122,6 +125,7 @@ void main() {
         TasksState(
           status: TasksStatus.loaded,
           timeline: timelineOf([pending]),
+          today: today,
           isRefreshing: true,
         ),
         loaded([pending, overdue]),
@@ -269,6 +273,7 @@ void main() {
         TasksState(
           status: TasksStatus.loaded,
           timeline: timelineOf([pending]),
+          today: today,
           isRefreshing: true,
           actionFailure: const TaskActionFailure(TaskFailureReason.network, 1),
         ),

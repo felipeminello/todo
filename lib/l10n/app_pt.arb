@@ -104,6 +104,31 @@
   "@tasksOverdueLabel": {
     "description": "Rótulo do destaque de atraso"
   },
+  "tasksTodayLabel": "Hoje",
+  "@tasksTodayLabel": {
+    "description": "Rótulo do destaque do dia de hoje na linha do tempo"
+  },
+  "tasksDayTodaySemantics": "{date}, hoje",
+  "@tasksDayTodaySemantics": {
+    "description": "Anúncio do leitor de tela para o dia de hoje",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSummary": "{pending, plural, =1{1 pendente} other{{pending} pendentes}} · {completed, plural, =1{1 concluída} other{{completed} concluídas}}",
+  "@tasksSummary": {
+    "description": "Resumo no cabeçalho com a quantidade de tarefas pendentes e concluídas",
+    "placeholders": {
+      "pending": {
+        "type": "int"
+      },
+      "completed": {
+        "type": "int"
+      }
+    }
+  },
   "tasksDayOverdueSemantics": "{date}, tarefas atrasadas",
   "@tasksDayOverdueSemantics": {
     "description": "Anúncio do leitor de tela para um dia atrasado",

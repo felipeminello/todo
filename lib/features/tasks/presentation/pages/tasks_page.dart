@@ -2,17 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:todo/core/error/failure.dart';
+import 'package:todo/core/ui/widgets/brand_background.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
 import 'package:todo/features/tasks/domain/usecases/add_task.dart';
 import 'package:todo/features/tasks/domain/usecases/update_task.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
-import 'package:todo/features/tasks/presentation/pages/task_form_page.dart';
+import 'package:todo/features/tasks/presentation/widgets/add_task_button.dart';
+import 'package:todo/features/tasks/presentation/widgets/delete_task_sheet.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_editor_panel.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_failure_message.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_form.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_form_sheet.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_list_skeleton.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_timeline_view.dart';
+import 'package:todo/features/tasks/presentation/widgets/tasks_empty_view.dart';
+import 'package:todo/features/tasks/presentation/widgets/tasks_header.dart';
+import 'package:todo/features/tasks/presentation/widgets/tasks_load_failure_view.dart';
 import 'package:todo/l10n/app_localizations.dart';
 
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key, this.onSignOut});
+
+  /// Windows at least this wide edit tasks in a panel beside the list
+  /// instead of a bottom sheet.
+  static const twoPaneBreakpoint = 960.0;
 
   final VoidCallback? onSignOut;
 
@@ -21,7 +34,17 @@ class TasksPage extends StatefulWidget {
 }
 
 class _TasksPageState extends State<TasksPage> {
+  static const _wideMaxWidth = 1200.0;
+  static const _panelWidth = 380.0;
+
   late final AppLifecycleListener _lifecycle;
+
+  /// The task open in the side panel; without one the panel creates.
+  Task? _editing;
+
+  /// Bumped to give the side panel a fresh form.
+  int _panelGeneration = 0;
+  bool _focusPanel = false;
 
   @override
   void initState() {
@@ -39,6 +62,9 @@ class _TasksPageState extends State<TasksPage> {
 
   TasksBloc get _bloc => context.read<TasksBloc>();
 
+  bool get _isWide =>
+      MediaQuery.sizeOf(context).width >= TasksPage.twoPaneBreakpoint;
+
   void _refresh() => _bloc.add(const TasksRequested());
 
   Future<void> _pullToRefresh() async {
@@ -48,46 +74,64 @@ class _TasksPageState extends State<TasksPage> {
     );
   }
 
+  void _openPanel({Task? task, bool focus = false}) => setState(() {
+    _editing = task;
+    _panelGeneration++;
+    _focusPanel = focus;
+  });
+
   Future<void> _add() async {
-    final result = await TaskFormPage.open(context);
+    if (_isWide) return _openPanel(focus: true);
+    final result = await TaskFormSheet.open(context);
     if (result == null || !mounted) return;
-    _bloc.add(
-      TaskAdded(
-        AddTaskParams(
-          title: result.title,
-          description: result.description,
-          dueDate: result.dueDate,
-        ),
-      ),
-    );
+    _save(result);
   }
 
   Future<void> _edit(Task task) async {
-    final result = await TaskFormPage.open(context, initial: task);
+    if (_isWide) return _openPanel(task: task, focus: true);
+    final result = await TaskFormSheet.open(context, initial: task);
     if (result == null || !mounted) return;
+    _save(result, original: task);
+  }
+
+  void _save(TaskFormResult result, {Task? original}) {
     _bloc.add(
-      TaskUpdated(
-        UpdateTaskParams(
-          original: task,
-          title: result.title,
-          description: result.description,
-          dueDate: result.dueDate,
-        ),
-      ),
+      original == null
+          ? TaskAdded(
+              AddTaskParams(
+                title: result.title,
+                description: result.description,
+                dueDate: result.dueDate,
+              ),
+            )
+          : TaskUpdated(
+              UpdateTaskParams(
+                original: original,
+                title: result.title,
+                description: result.description,
+                dueDate: result.dueDate,
+              ),
+            ),
     );
   }
 
+  void _saveFromPanel(TaskFormResult result) {
+    _save(result, original: _editing);
+    _openPanel();
+  }
+
   Future<void> _delete(Task task) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => _DeleteDialog(title: task.title),
-    );
-    if (confirmed == true && mounted) _bloc.add(TaskDeleted(task));
+    final confirmed = await DeleteTaskSheet.confirm(context, title: task.title);
+    if (!confirmed || !mounted) return;
+    _bloc.add(TaskDeleted(task));
+    if (_editing?.id == task.id) _openPanel();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final wide = _isWide;
+    final padding = wide ? 32.0 : 20.0;
 
     return CallbackShortcuts(
       bindings: {
@@ -98,164 +142,128 @@ class _TasksPageState extends State<TasksPage> {
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          appBar: AppBar(
-            title: Text(l10n.appTitle),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: l10n.refreshTooltip,
-                onPressed: _refresh,
-              ),
-              if (widget.onSignOut case final onSignOut?)
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  tooltip: l10n.signOutTooltip,
-                  onPressed: onSignOut,
-                ),
-            ],
-          ),
-          floatingActionButton: FloatingActionButton(
-            tooltip: l10n.addTaskTooltip,
-            onPressed: _add,
-            child: const Icon(Icons.add),
-          ),
-          body: SafeArea(
-            child: BlocConsumer<TasksBloc, TasksState>(
-              listenWhen: (previous, current) =>
-                  current.actionFailure != null &&
-                  previous.actionFailure != current.actionFailure,
-              listener: (context, state) {
-                final failure = state.actionFailure;
-                if (failure == null) return;
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    SnackBar(
-                      content: Text(taskFailureMessage(l10n, failure.reason)),
+          floatingActionButton: wide ? null : AddTaskButton(onPressed: _add),
+          body: BrandBackground(
+            child: SafeArea(
+              bottom: false,
+              child: BlocConsumer<TasksBloc, TasksState>(
+                listenWhen: (previous, current) =>
+                    current.actionFailure != null &&
+                    previous.actionFailure != current.actionFailure,
+                listener: (context, state) {
+                  final failure = state.actionFailure;
+                  if (failure == null) return;
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(taskFailureMessage(l10n, failure.reason)),
+                      ),
+                    );
+                },
+                builder: (context, state) {
+                  final loaded = state.status == TasksStatus.loaded;
+                  final header = TasksHeader(
+                    today: state.today,
+                    pendingCount: loaded ? state.timeline.pendingCount : null,
+                    completedCount: loaded
+                        ? state.timeline.completed.length
+                        : null,
+                    onRefresh: _refresh,
+                    onSignOut: widget.onSignOut,
+                    onAdd: wide ? _add : null,
+                    horizontalPadding: padding,
+                  );
+                  final content = switch (state.status) {
+                    TasksStatus.loading => TaskListSkeleton(
+                      horizontalPadding: padding,
+                    ),
+                    TasksStatus.failure => TasksLoadFailureView(
+                      message: taskFailureMessage(
+                        l10n,
+                        state.loadFailure ?? TaskFailureReason.unknown,
+                      ),
+                      onRetry: _refresh,
+                    ),
+                    TasksStatus.loaded => RefreshIndicator(
+                      onRefresh: _pullToRefresh,
+                      child: state.timeline.isEmpty
+                          ? const TasksEmptyView()
+                          : TaskTimelineView(
+                              timeline: state.timeline,
+                              selectedTaskId: wide ? _editing?.id : null,
+                              horizontalPadding: padding,
+                              onToggle: (task) =>
+                                  _bloc.add(TaskCompletionToggled(task)),
+                              onEdit: _edit,
+                              onDelete: _delete,
+                            ),
+                    ),
+                  };
+
+                  if (!wide) {
+                    return Column(
+                      children: [
+                        Center(
+                          heightFactor: 1,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth:
+                                  TaskTimelineView.maxContentWidth +
+                                  2 * padding,
+                            ),
+                            child: header,
+                          ),
+                        ),
+                        Expanded(child: content),
+                      ],
+                    );
+                  }
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: _wideMaxWidth,
+                      ),
+                      child: Column(
+                        children: [
+                          header,
+                          Expanded(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: content),
+                                if (loaded)
+                                  SizedBox(
+                                    width: _panelWidth + padding,
+                                    child: SingleChildScrollView(
+                                      padding: EdgeInsets.fromLTRB(
+                                        0,
+                                        4,
+                                        padding,
+                                        32,
+                                      ),
+                                      child: TaskEditorPanel(
+                                        key: ValueKey(_panelGeneration),
+                                        task: _editing,
+                                        autofocus: _focusPanel,
+                                        onSubmit: _saveFromPanel,
+                                        onCancel: _openPanel,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
-              },
-              builder: (context, state) => switch (state.status) {
-                TasksStatus.loading => Center(
-                  child: CircularProgressIndicator(
-                    semanticsLabel: l10n.loadingLabel,
-                  ),
-                ),
-                TasksStatus.failure => _LoadFailureView(
-                  message: taskFailureMessage(
-                    l10n,
-                    state.loadFailure ?? TaskFailureReason.unknown,
-                  ),
-                  onRetry: _refresh,
-                ),
-                TasksStatus.loaded => RefreshIndicator(
-                  onRefresh: _pullToRefresh,
-                  child: state.timeline.isEmpty
-                      ? const _EmptyView()
-                      : TaskTimelineView(
-                          timeline: state.timeline,
-                          onToggle: (task) =>
-                              _bloc.add(TaskCompletionToggled(task)),
-                          onEdit: _edit,
-                          onDelete: _delete,
-                        ),
-                ),
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final textTheme = Theme.of(context).textTheme;
-
-    // Scrollable so pull-to-refresh also works on an empty list.
-    return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.checklist, size: 64),
-                  const SizedBox(height: 16),
-                  Text(l10n.tasksEmptyTitle, style: textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(l10n.tasksEmptyMessage, textAlign: TextAlign.center),
-                ],
+                },
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _LoadFailureView extends StatelessWidget {
-  const _LoadFailureView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off, size: 48),
-            const SizedBox(height: 16),
-            Text(l10n.tasksLoadError, textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: Text(l10n.retryAction)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DeleteDialog extends StatelessWidget {
-  const _DeleteDialog({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return AlertDialog(
-      title: Text(l10n.taskDeleteDialogTitle),
-      content: Text(l10n.taskDeleteDialogMessage(title)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(l10n.cancelAction),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text(l10n.deleteAction),
-        ),
-      ],
     );
   }
 }

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todo/core/time/calendar_date.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
-import 'package:todo/features/tasks/presentation/pages/task_form_page.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_form.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_form_sheet.dart';
 
 import '../../../../helpers/localized_app.dart';
 
@@ -22,7 +23,7 @@ class _HostState extends State<_Host> {
   Widget build(BuildContext context) => Scaffold(
     body: TextButton(
       onPressed: () async => widget.onResult(
-        await TaskFormPage.open(context, initial: widget.initial),
+        await TaskFormSheet.open(context, initial: widget.initial),
       ),
       child: const Text('abrir'),
     ),
@@ -64,7 +65,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Informe o título'), findsOneWidget);
-      expect(find.byType(TaskFormPage), findsOneWidget);
+      expect(find.byType(TaskForm), findsOneWidget);
       expect(results, isEmpty);
     });
   }
@@ -142,7 +143,7 @@ void main() {
     );
 
     await tester.enterText(titleField(), 'Mudado');
-    await tester.tap(find.byType(CloseButton));
+    await tester.tap(find.byTooltip('Cancelar'));
     await tester.pumpAndSettle();
 
     expect(results, [null]);

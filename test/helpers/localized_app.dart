@@ -14,7 +14,7 @@ Widget localizedApp({required Widget home, ThemeData? theme}) {
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    theme: theme ?? AppTheme.light,
+    theme: theme ?? AppTheme.light(),
     home: home,
   );
 }
