@@ -94,6 +94,14 @@ void main() {
       );
     });
 
+    test('addDays crosses month and year boundaries', () {
+      expect(CalendarDate(2026, 10, 27).addDays(7), CalendarDate(2026, 11, 3));
+      expect(CalendarDate(2026, 12, 28).addDays(7), CalendarDate(2027, 1, 4));
+      expect(CalendarDate(2028, 2, 26).addDays(3), CalendarDate(2028, 2, 29));
+      expect(CalendarDate(2026, 3, 1).addDays(-1), CalendarDate(2026, 2, 28));
+      expect(CalendarDate(2026, 10, 27).addDays(0), CalendarDate(2026, 10, 27));
+    });
+
     test('toLocalDateTime is local midnight of the same day', () {
       final dateTime = CalendarDate(2026, 10, 27).toLocalDateTime();
       expect(dateTime.isUtc, isFalse);

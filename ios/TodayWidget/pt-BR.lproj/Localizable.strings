@@ -1,0 +1,5 @@
+/* Nome do widget na galeria de widgets */
+"widget.name" = "Tarefas de hoje";
+
+/* Descrição do widget na galeria de widgets */
+"widget.description" = "As tarefas de hoje e as atrasadas, de relance.";

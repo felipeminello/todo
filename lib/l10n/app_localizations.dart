@@ -411,6 +411,30 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Salvar'**
   String get taskFormSave;
+
+  /// Cabeçalho do widget de tela inicial com as tarefas do dia
+  ///
+  /// In pt, this message translates to:
+  /// **'Hoje'**
+  String get widgetHeader;
+
+  /// Mensagem do widget de tela inicial quando não há tarefa de hoje nem atrasada
+  ///
+  /// In pt, this message translates to:
+  /// **'Nada para hoje'**
+  String get widgetEmpty;
+
+  /// Mensagem do widget de tela inicial quando o app ficou fechado além do período que o widget conhece
+  ///
+  /// In pt, this message translates to:
+  /// **'Abra o app para atualizar'**
+  String get widgetStale;
+
+  /// Mensagem do widget de tela inicial quando não há usuário conectado
+  ///
+  /// In pt, this message translates to:
+  /// **'Entre no app para ver suas tarefas'**
+  String get widgetSignedOut;
 }
 
 class _AppLocalizationsDelegate

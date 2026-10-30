@@ -9,6 +9,7 @@ import 'package:todo/features/tasks/domain/usecases/add_task.dart';
 import 'package:todo/features/tasks/domain/usecases/build_task_timeline.dart';
 import 'package:todo/features/tasks/domain/usecases/delete_task.dart';
 import 'package:todo/features/tasks/domain/usecases/get_tasks.dart';
+import 'package:todo/features/tasks/domain/usecases/publish_widget_tasks.dart';
 import 'package:todo/features/tasks/domain/usecases/toggle_task.dart';
 import 'package:todo/features/tasks/domain/usecases/update_task.dart';
 
@@ -25,6 +26,7 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
     required this._deleteTask,
     required this._toggleTask,
     required this._buildTimeline,
+    required this._publishWidgetTasks,
     required this._clock,
   }) : super(const TasksState()) {
     on<TasksRequested>((event, emit) => _reload(emit, reportFailure: true));
@@ -46,6 +48,7 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
   final DeleteTask _deleteTask;
   final ToggleTask _toggleTask;
   final BuildTaskTimeline _buildTimeline;
+  final PublishWidgetTasks _publishWidgetTasks;
   final Clock _clock;
   int _failureSequence = 0;
 
@@ -71,6 +74,7 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
           isRefreshing: false,
         ),
       );
+      await _publishToWidget(tasks);
     } on Object catch (error) {
       final reason = _reasonOf(error);
       emit(
@@ -102,6 +106,15 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
     // After a failed change the cause was already reported; the reload only
     // makes sure the list matches what is stored.
     await _reload(emit, reportFailure: !failed);
+  }
+
+  Future<void> _publishToWidget(List<Task> tasks) async {
+    try {
+      await _publishWidgetTasks(tasks);
+    } on Object catch (_) {
+      // The widget is secondary: failing to update it must never reach the
+      // screen, and the next reload tries again.
+    }
   }
 
   TaskActionFailure _nextFailure(TaskFailureReason reason) =>

@@ -4,7 +4,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:todo/app/auth_gate.dart';
 import 'package:todo/app/theme/app_theme.dart';
 import 'package:todo/app/theme/app_typography.dart';
+import 'package:todo/app/widget_sign_out_listener.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:todo/features/tasks/domain/usecases/clear_widget_tasks.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:todo/l10n/app_localizations.dart';
 
@@ -13,11 +15,13 @@ class TodoApp extends StatelessWidget {
     super.key,
     required this.createAuthBloc,
     required this.createTasksBloc,
+    required this.clearWidgetTasks,
     this.typography = const PlatformTypography(),
   });
 
   final AuthBloc Function() createAuthBloc;
   final TasksBloc Function() createTasksBloc;
+  final ClearWidgetTasks clearWidgetTasks;
   final AppTypography typography;
 
   @override
@@ -36,7 +40,10 @@ class TodoApp extends StatelessWidget {
         ],
         theme: AppTheme.light(typography),
         darkTheme: AppTheme.dark(typography),
-        home: AuthGate(createTasksBloc: createTasksBloc),
+        home: WidgetSignOutListener(
+          clearWidgetTasks: clearWidgetTasks,
+          child: AuthGate(createTasksBloc: createTasksBloc),
+        ),
       ),
     );
   }

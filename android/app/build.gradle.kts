@@ -3,6 +3,8 @@ plugins {
     // START: FlutterFire Configuration
     id("com.google.gms.google-services")
     // END: FlutterFire Configuration
+    // Glance, used by the home screen widget, is built on Compose.
+    id("org.jetbrains.kotlin.plugin.compose")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -49,4 +51,14 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Same versions home_widget uses, so Gradle resolves a single copy.
+    implementation("androidx.glance:glance-appwidget:1.2.0")
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
+
+    testImplementation("junit:junit:4.13.2")
+    // The org.json in android.jar is a stub on the JVM.
+    testImplementation("org.json:json:20250517")
 }

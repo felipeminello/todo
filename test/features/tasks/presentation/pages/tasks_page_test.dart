@@ -7,11 +7,13 @@ import 'package:todo/core/error/exceptions.dart';
 import 'package:todo/core/time/calendar_date.dart';
 import 'package:todo/features/tasks/data/models/task_model.dart';
 import 'package:todo/features/tasks/data/repositories/task_repository_impl.dart';
+import 'package:todo/features/tasks/data/widget/noop_task_widget_publisher.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
 import 'package:todo/features/tasks/domain/usecases/add_task.dart';
 import 'package:todo/features/tasks/domain/usecases/build_task_timeline.dart';
 import 'package:todo/features/tasks/domain/usecases/delete_task.dart';
 import 'package:todo/features/tasks/domain/usecases/get_tasks.dart';
+import 'package:todo/features/tasks/domain/usecases/publish_widget_tasks.dart';
 import 'package:todo/features/tasks/domain/usecases/toggle_task.dart';
 import 'package:todo/features/tasks/domain/usecases/update_task.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
@@ -62,6 +64,10 @@ void main() {
       deleteTask: DeleteTask(repository),
       toggleTask: ToggleTask(repository, clock),
       buildTimeline: const BuildTaskTimeline(),
+      publishWidgetTasks: PublishWidgetTasks(
+        const NoopTaskWidgetPublisher(),
+        clock,
+      ),
       clock: clock,
     )..add(const TasksRequested());
     addTearDown(bloc.close);
@@ -407,6 +413,10 @@ void main() {
       deleteTask: DeleteTask(repository),
       toggleTask: ToggleTask(repository, clock),
       buildTimeline: const BuildTaskTimeline(),
+      publishWidgetTasks: PublishWidgetTasks(
+        const NoopTaskWidgetPublisher(),
+        clock,
+      ),
       clock: clock,
     )..add(const TasksRequested());
     addTearDown(bloc.close);

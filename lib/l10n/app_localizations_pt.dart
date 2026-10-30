@@ -193,4 +193,16 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get taskFormSave => 'Salvar';
+
+  @override
+  String get widgetHeader => 'Hoje';
+
+  @override
+  String get widgetEmpty => 'Nada para hoje';
+
+  @override
+  String get widgetStale => 'Abra o app para atualizar';
+
+  @override
+  String get widgetSignedOut => 'Entre no app para ver suas tarefas';
 }

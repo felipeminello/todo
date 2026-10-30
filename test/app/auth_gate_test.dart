@@ -12,6 +12,7 @@ import 'package:todo/features/auth/domain/usecases/sign_out.dart';
 import 'package:todo/features/auth/domain/usecases/sign_up.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:todo/features/auth/presentation/pages/auth_page.dart';
+import 'package:todo/features/tasks/data/widget/noop_task_widget_publisher.dart';
 import 'package:todo/features/tasks/domain/entities/new_task.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
 import 'package:todo/features/tasks/domain/repositories/task_repository.dart';
@@ -19,6 +20,7 @@ import 'package:todo/features/tasks/domain/usecases/add_task.dart';
 import 'package:todo/features/tasks/domain/usecases/build_task_timeline.dart';
 import 'package:todo/features/tasks/domain/usecases/delete_task.dart';
 import 'package:todo/features/tasks/domain/usecases/get_tasks.dart';
+import 'package:todo/features/tasks/domain/usecases/publish_widget_tasks.dart';
 import 'package:todo/features/tasks/domain/usecases/toggle_task.dart';
 import 'package:todo/features/tasks/domain/usecases/update_task.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
@@ -87,6 +89,10 @@ void main() {
               deleteTask: DeleteTask(tasks),
               toggleTask: ToggleTask(tasks, clock),
               buildTimeline: const BuildTaskTimeline(),
+              publishWidgetTasks: PublishWidgetTasks(
+                const NoopTaskWidgetPublisher(),
+                clock,
+              ),
               clock: clock,
             ),
           ),

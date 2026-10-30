@@ -1,3 +1,5 @@
+import 'dart:ui' show Locale;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
+import 'package:todo/app/home_widget_strings.dart';
 import 'package:todo/core/time/clock.dart';
 import 'package:todo/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:todo/features/auth/data/datasources/firebase_auth_data_source.dart';
@@ -24,19 +27,32 @@ import 'package:todo/features/tasks/data/datasources/firestore_task_data_source.
 import 'package:todo/features/tasks/data/datasources/rest_firestore_task_data_source.dart';
 import 'package:todo/features/tasks/data/datasources/task_remote_data_source.dart';
 import 'package:todo/features/tasks/data/repositories/task_repository_impl.dart';
+import 'package:todo/features/tasks/data/widget/home_widget_storage.dart';
+import 'package:todo/features/tasks/data/widget/home_widget_task_publisher.dart';
+import 'package:todo/features/tasks/data/widget/noop_task_widget_publisher.dart';
+import 'package:todo/features/tasks/data/widget/widget_snapshot_codec.dart';
+import 'package:todo/features/tasks/data/widget/widget_storage.dart';
 import 'package:todo/features/tasks/domain/repositories/task_repository.dart';
+import 'package:todo/features/tasks/domain/repositories/task_widget_publisher.dart';
 import 'package:todo/features/tasks/domain/usecases/add_task.dart';
 import 'package:todo/features/tasks/domain/usecases/build_task_timeline.dart';
+import 'package:todo/features/tasks/domain/usecases/clear_widget_tasks.dart';
 import 'package:todo/features/tasks/domain/usecases/delete_task.dart';
 import 'package:todo/features/tasks/domain/usecases/get_tasks.dart';
+import 'package:todo/features/tasks/domain/usecases/publish_widget_tasks.dart';
 import 'package:todo/features/tasks/domain/usecases/toggle_task.dart';
 import 'package:todo/features/tasks/domain/usecases/update_task.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
+import 'package:todo/l10n/app_localizations.dart';
 
 /// Whether the platform talks to Firebase over REST instead of FlutterFire,
 /// which does not support Windows in production.
 bool usesFirebaseRest(TargetPlatform platform) =>
     platform == TargetPlatform.windows;
+
+/// Whether the platform has the native home screen widget.
+bool usesHomeWidget(TargetPlatform platform) =>
+    platform == TargetPlatform.android || platform == TargetPlatform.iOS;
 
 /// Registers the whole object graph in [sl].
 ///
@@ -96,6 +112,31 @@ void configureDependencies(
       );
   }
 
+  if (usesHomeWidget(platform)) {
+    sl
+      ..registerLazySingleton<WidgetStorage>(
+        () => HomeWidgetStorage(
+          appGroupId: platform == TargetPlatform.iOS
+              ? HomeWidgetStorage.iOSAppGroupId
+              : null,
+        ),
+      )
+      ..registerLazySingleton<TaskWidgetPublisher>(
+        () => HomeWidgetTaskPublisher(
+          sl(),
+          // Same fixed locale as the MaterialApp; there is no BuildContext
+          // here.
+          WidgetSnapshotCodec(
+            homeWidgetStrings(lookupAppLocalizations(const Locale('pt', 'BR'))),
+          ),
+        ),
+      );
+  } else {
+    sl.registerLazySingleton<TaskWidgetPublisher>(
+      () => const NoopTaskWidgetPublisher(),
+    );
+  }
+
   sl
     ..registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl()))
     ..registerLazySingleton<CurrentUserIdProvider>(
@@ -118,9 +159,11 @@ void configureDependencies(
         deleteTask: DeleteTask(sl()),
         toggleTask: ToggleTask(sl(), sl()),
         buildTimeline: const BuildTaskTimeline(),
+        publishWidgetTasks: PublishWidgetTasks(sl(), sl()),
         clock: sl(),
       ),
-    );
+    )
+    ..registerLazySingleton(() => ClearWidgetTasks(sl()));
 }
 
 // No offline cache, to behave like the REST client on Windows: what is shown

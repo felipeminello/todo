@@ -239,5 +239,21 @@
   "taskFormSave": "Salvar",
   "@taskFormSave": {
     "description": "Botão que salva a tarefa"
+  },
+  "widgetHeader": "Hoje",
+  "@widgetHeader": {
+    "description": "Cabeçalho do widget de tela inicial com as tarefas do dia"
+  },
+  "widgetEmpty": "Nada para hoje",
+  "@widgetEmpty": {
+    "description": "Mensagem do widget de tela inicial quando não há tarefa de hoje nem atrasada"
+  },
+  "widgetStale": "Abra o app para atualizar",
+  "@widgetStale": {
+    "description": "Mensagem do widget de tela inicial quando o app ficou fechado além do período que o widget conhece"
+  },
+  "widgetSignedOut": "Entre no app para ver suas tarefas",
+  "@widgetSignedOut": {
+    "description": "Mensagem do widget de tela inicial quando não há usuário conectado"
   }
 }

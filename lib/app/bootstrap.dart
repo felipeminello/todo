@@ -6,6 +6,7 @@ import 'package:todo/app/app.dart';
 import 'package:todo/app/injection.dart';
 import 'package:todo/app/theme/google_fonts_typography.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:todo/features/tasks/domain/usecases/clear_widget_tasks.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:todo/firebase_options.dart';
 
@@ -27,6 +28,7 @@ Future<void> bootstrap() async {
     TodoApp(
       createAuthBloc: sl.call<AuthBloc>,
       createTasksBloc: sl.call<TasksBloc>,
+      clearWidgetTasks: sl<ClearWidgetTasks>(),
       typography: const GoogleFontsTypography(),
     ),
   );

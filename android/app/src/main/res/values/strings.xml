@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown in the widget picker before the app writes any text. Everything
+         inside the widget comes from the app's ARB file instead. -->
+    <string name="today_widget_name">Tarefas de hoje</string>
+    <string name="today_widget_description">As tarefas de hoje e as atrasadas, de relance.</string>
+</resources>

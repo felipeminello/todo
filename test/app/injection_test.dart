@@ -17,6 +17,12 @@ import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:todo/features/tasks/data/datasources/firestore_task_data_source.dart';
 import 'package:todo/features/tasks/data/datasources/rest_firestore_task_data_source.dart';
 import 'package:todo/features/tasks/data/datasources/task_remote_data_source.dart';
+import 'package:todo/features/tasks/data/widget/home_widget_storage.dart';
+import 'package:todo/features/tasks/data/widget/home_widget_task_publisher.dart';
+import 'package:todo/features/tasks/data/widget/noop_task_widget_publisher.dart';
+import 'package:todo/features/tasks/data/widget/widget_storage.dart';
+import 'package:todo/features/tasks/domain/repositories/task_widget_publisher.dart';
+import 'package:todo/features/tasks/domain/usecases/clear_widget_tasks.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 
 class _MockFirebaseAuth extends Mock implements FirebaseAuth {}
@@ -77,6 +83,47 @@ void main() {
       expect(sl<AuthRemoteDataSource>(), isA<FirebaseAuthDataSource>());
       expect(sl<TaskRemoteDataSource>(), isA<FirestoreTaskDataSource>());
       expect(sl.isRegistered<IdTokenProvider>(), isFalse);
+    });
+  }
+
+  test('only Android and iOS use the home screen widget', () {
+    expect(usesHomeWidget(TargetPlatform.android), isTrue);
+    expect(usesHomeWidget(TargetPlatform.iOS), isTrue);
+    expect(usesHomeWidget(TargetPlatform.windows), isFalse);
+    expect(usesHomeWidget(TargetPlatform.macOS), isFalse);
+  });
+
+  test('Android publishes to the widget without an App Group', () {
+    configure(TargetPlatform.android);
+
+    expect(sl<TaskWidgetPublisher>(), isA<HomeWidgetTaskPublisher>());
+    expect(
+      sl<WidgetStorage>(),
+      isA<HomeWidgetStorage>().having((s) => s.appGroupId, 'appGroupId', null),
+    );
+  });
+
+  test('iOS publishes to the widget through the App Group', () {
+    configure(TargetPlatform.iOS);
+
+    expect(sl<TaskWidgetPublisher>(), isA<HomeWidgetTaskPublisher>());
+    expect(
+      sl<WidgetStorage>(),
+      isA<HomeWidgetStorage>().having(
+        (s) => s.appGroupId,
+        'appGroupId',
+        'group.br.dev.minello.todo',
+      ),
+    );
+  });
+
+  for (final platform in [TargetPlatform.windows, TargetPlatform.macOS]) {
+    test('$platform has no home screen widget', () {
+      configure(platform);
+
+      expect(sl<TaskWidgetPublisher>(), isA<NoopTaskWidgetPublisher>());
+      expect(sl.isRegistered<WidgetStorage>(), isFalse);
+      expect(sl<ClearWidgetTasks>(), isA<ClearWidgetTasks>());
     });
   }
 

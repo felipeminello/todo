@@ -51,6 +51,13 @@ final class CalendarDate extends Equatable implements Comparable<CalendarDate> {
   /// Local midnight of this day, for widgets such as date pickers.
   DateTime toLocalDateTime() => DateTime(year, month, day);
 
+  /// The day [days] days after this one (before it, if negative). Computed
+  /// in UTC so daylight saving changes never skip or repeat a day.
+  CalendarDate addDays(int days) {
+    final shifted = DateTime.utc(year, month, day + days);
+    return CalendarDate._(shifted.year, shifted.month, shifted.day);
+  }
+
   bool isBefore(CalendarDate other) => compareTo(other) < 0;
 
   bool isAfter(CalendarDate other) => compareTo(other) > 0;

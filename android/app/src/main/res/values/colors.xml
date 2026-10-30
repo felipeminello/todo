@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- widget_overdue must match TaskStatusColors.light in Dart; it keeps
+         4.5:1 against widget_background. -->
+    <color name="widget_overdue">#FFA6400A</color>
+    <color name="widget_background">#FFFFFFFF</color>
+    <color name="widget_on_background">#FF1C1B1F</color>
+    <color name="widget_on_background_variant">#FF5F5E62</color>
+</resources>

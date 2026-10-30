@@ -6,11 +6,14 @@ import 'package:todo/core/time/calendar_date.dart';
 import 'package:todo/features/tasks/domain/entities/new_task.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
 import 'package:todo/features/tasks/domain/entities/task_timeline.dart';
+import 'package:todo/features/tasks/domain/entities/widget_task_snapshot.dart';
 import 'package:todo/features/tasks/domain/repositories/task_repository.dart';
+import 'package:todo/features/tasks/domain/repositories/task_widget_publisher.dart';
 import 'package:todo/features/tasks/domain/usecases/add_task.dart';
 import 'package:todo/features/tasks/domain/usecases/build_task_timeline.dart';
 import 'package:todo/features/tasks/domain/usecases/delete_task.dart';
 import 'package:todo/features/tasks/domain/usecases/get_tasks.dart';
+import 'package:todo/features/tasks/domain/usecases/publish_widget_tasks.dart';
 import 'package:todo/features/tasks/domain/usecases/toggle_task.dart';
 import 'package:todo/features/tasks/domain/usecases/update_task.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
@@ -20,11 +23,14 @@ import '../../../../helpers/task_factory.dart';
 
 class _MockTaskRepository extends Mock implements TaskRepository {}
 
+class _MockTaskWidgetPublisher extends Mock implements TaskWidgetPublisher {}
+
 void main() {
   final today = CalendarDate(2026, 10, 27);
   final pending = buildTask('p', dueDate: CalendarDate(2026, 10, 30));
   final overdue = buildTask('o', dueDate: CalendarDate(2026, 10, 25));
   late _MockTaskRepository repository;
+  late _MockTaskWidgetPublisher widgetPublisher;
   late FixedClock clock;
 
   TasksBloc build() => TasksBloc(
@@ -34,6 +40,7 @@ void main() {
     deleteTask: DeleteTask(repository),
     toggleTask: ToggleTask(repository, clock),
     buildTimeline: const BuildTaskTimeline(),
+    publishWidgetTasks: PublishWidgetTasks(widgetPublisher, clock),
     clock: clock,
   );
 
@@ -57,10 +64,19 @@ void main() {
   setUpAll(() {
     registerFallbackValue(NewTask(title: '', createdAt: baseInstant));
     registerFallbackValue(buildTask('fallback'));
+    registerFallbackValue(
+      WidgetTaskSnapshot(
+        tasks: const [],
+        generatedAt: baseInstant,
+        coversUntil: CalendarDate(2026, 1, 1),
+      ),
+    );
   });
 
   setUp(() {
     repository = _MockTaskRepository();
+    widgetPublisher = _MockTaskWidgetPublisher();
+    when(() => widgetPublisher.publish(any())).thenAnswer((_) async {});
     clock = FixedClock(DateTime(2026, 10, 27, 9));
     when(() => repository.update(any())).thenAnswer((_) async {});
     when(() => repository.delete(any())).thenAnswer((_) async {});
@@ -301,6 +317,88 @@ void main() {
         bloc.state.actionFailure,
         const TaskActionFailure(TaskFailureReason.notFound, 2),
       ),
+    );
+  });
+  group('home screen widget', () {
+    blocTest<TasksBloc, TasksState>(
+      'loading publishes the stored tasks for today',
+      setUp: () => stored([
+        buildTask('today', dueDate: today),
+        overdue,
+        buildTask('undated'),
+      ]),
+      build: build,
+      act: (bloc) => bloc.add(const TasksRequested()),
+      verify: (_) {
+        final snapshot =
+            verify(() => widgetPublisher.publish(captureAny())).captured.single
+                as WidgetTaskSnapshot;
+        expect([for (final t in snapshot.tasks) t.id], ['today', 'o']);
+        expect(snapshot.coversUntil, today.addDays(7));
+      },
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'each change publishes the reloaded list',
+      setUp: () {
+        when(() => repository.add(any()))
+            .thenAnswer((_) async => buildTask('new', dueDate: today));
+        stored([pending]);
+      },
+      build: build,
+      act: (bloc) async {
+        bloc.add(const TasksRequested());
+        await Future<void>.delayed(Duration.zero);
+        stored([pending, buildTask('new', dueDate: today)]);
+        bloc.add(const TaskAdded(AddTaskParams(title: 'Nova')));
+        await Future<void>.delayed(Duration.zero);
+        stored([buildTask('new', dueDate: today)]);
+        bloc.add(TaskDeleted(pending));
+        await Future<void>.delayed(Duration.zero);
+        stored(const []);
+        bloc.add(TaskCompletionToggled(buildTask('new', dueDate: today)));
+      },
+      verify: (_) {
+        final snapshots = verify(() => widgetPublisher.publish(captureAny()))
+            .captured
+            .cast<WidgetTaskSnapshot>();
+        expect(
+          [
+            for (final s in snapshots) [for (final t in s.tasks) t.id],
+          ],
+          [
+            ['p'],
+            ['p', 'new'],
+            ['new'],
+            <String>[],
+          ],
+        );
+      },
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'a failed reload publishes nothing',
+      setUp: () =>
+          when(() => repository.getAll())
+              .thenAnswer((_) => fail(TaskFailureReason.network)),
+      build: build,
+      act: (bloc) => bloc.add(const TasksRequested()),
+      verify: (_) => verifyNever(() => widgetPublisher.publish(any())),
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'a failed publish changes nothing on screen',
+      setUp: () {
+        stored([pending]);
+        when(() => widgetPublisher.publish(any()))
+            .thenAnswer((_) async => throw StateError('storage'));
+      },
+      build: build,
+      act: (bloc) => bloc.add(const TasksRequested()),
+      expect: () => [
+        loaded([pending]),
+      ],
+      errors: () => isEmpty,
     );
   });
 }
