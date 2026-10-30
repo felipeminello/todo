@@ -106,6 +106,12 @@ abstract class AppLocalizations {
   /// **'Carregando'**
   String get loadingLabel;
 
+  /// Rótulo de acessibilidade da barra exibida enquanto uma tarefa criada ou editada é salva
+  ///
+  /// In pt, this message translates to:
+  /// **'Salvando'**
+  String get savingLabel;
+
   /// Título da tela de login
   ///
   /// In pt, this message translates to:
@@ -129,6 +135,18 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Senha'**
   String get authPasswordLabel;
+
+  /// Dica do botão que exibe a senha digitada
+  ///
+  /// In pt, this message translates to:
+  /// **'Mostrar senha'**
+  String get authShowPassword;
+
+  /// Dica do botão que volta a ocultar a senha digitada
+  ///
+  /// In pt, this message translates to:
+  /// **'Ocultar senha'**
+  String get authHidePassword;
 
   /// Botão que envia o login
   ///

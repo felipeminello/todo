@@ -18,6 +18,7 @@ import 'package:todo/features/tasks/presentation/widgets/task_timeline_view.dart
 import 'package:todo/features/tasks/presentation/widgets/tasks_empty_view.dart';
 import 'package:todo/features/tasks/presentation/widgets/tasks_header.dart';
 import 'package:todo/features/tasks/presentation/widgets/tasks_load_failure_view.dart';
+import 'package:todo/features/tasks/presentation/widgets/tasks_saving_indicator.dart';
 import 'package:todo/l10n/app_localizations.dart';
 
 class TasksPage extends StatefulWidget {
@@ -174,6 +175,10 @@ class _TasksPageState extends State<TasksPage> {
                     onAdd: wide ? _add : null,
                     horizontalPadding: padding,
                   );
+                  final saving = TasksSavingIndicator(
+                    isSaving: state.isSaving,
+                    horizontalPadding: padding,
+                  );
                   final content = switch (state.status) {
                     TasksStatus.loading => TaskListSkeleton(
                       horizontalPadding: padding,
@@ -212,7 +217,7 @@ class _TasksPageState extends State<TasksPage> {
                                   TaskTimelineView.maxContentWidth +
                                   2 * padding,
                             ),
-                            child: header,
+                            child: Column(children: [header, saving]),
                           ),
                         ),
                         Expanded(child: content),
@@ -227,6 +232,7 @@ class _TasksPageState extends State<TasksPage> {
                       child: Column(
                         children: [
                           header,
+                          saving,
                           Expanded(
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,

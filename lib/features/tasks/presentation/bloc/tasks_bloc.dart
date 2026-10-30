@@ -16,8 +16,13 @@ import 'package:todo/features/tasks/domain/usecases/update_task.dart';
 part 'tasks_event.dart';
 part 'tasks_state.dart';
 
-/// Every change goes to the server first and the list is then reloaded from
-/// it, so what is shown is always what is stored.
+/// Completing and deleting show at once and are stored in the background,
+/// undone on screen if storing fails. Creating and editing wait for the server,
+/// with [TasksState.isSaving] set meanwhile: a new task only gets its id there.
+/// No change reloads the list; the screen keeps it up to date itself.
+///
+/// Writes and reloads reach the server one at a time, in the order they were
+/// made, so two quick changes to the same task never land out of order.
 final class TasksBloc extends Bloc<TasksEvent, TasksState> {
   TasksBloc({
     required this._getTasks,
@@ -29,17 +34,35 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
     required this._publishWidgetTasks,
     required this._clock,
   }) : super(const TasksState()) {
-    on<TasksRequested>((event, emit) => _reload(emit, reportFailure: true));
-    on<TaskAdded>((event, emit) => _change(emit, () => _addTask(event.params)));
+    on<TasksRequested>((event, emit) => _reload(emit));
+    on<TaskAdded>(
+      (event, emit) => _save(emit, () => _addTask(event.params), _upserted),
+    );
     on<TaskUpdated>(
-      (event, emit) => _change(emit, () => _updateTask(event.params)),
+      (event, emit) => _save(
+        emit,
+        () => _updateTask(event.params),
+        _replaced,
+        taskId: event.params.original.id,
+      ),
     );
     on<TaskDeleted>(
-      (event, emit) => _change(emit, () => _deleteTask(event.task.id)),
+      (event, emit) => _changeNow(
+        emit,
+        before: event.task,
+        after: null,
+        store: () => _deleteTask(event.task.id),
+      ),
     );
-    on<TaskCompletionToggled>(
-      (event, emit) => _change(emit, () => _toggleTask(event.task)),
-    );
+    on<TaskCompletionToggled>((event, emit) {
+      final toggled = _toggleTask.toggled(event.task);
+      return _changeNow(
+        emit,
+        before: event.task,
+        after: toggled,
+        store: () => _toggleTask(toggled),
+      );
+    });
   }
 
   final GetTasks _getTasks;
@@ -51,11 +74,12 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
   final PublishWidgetTasks _publishWidgetTasks;
   final Clock _clock;
   int _failureSequence = 0;
+  int _savesInFlight = 0;
 
-  Future<void> _reload(
-    Emitter<TasksState> emit, {
-    required bool reportFailure,
-  }) async {
+  /// Completes when the last queued server call has finished.
+  Future<void> _serverQueue = Future<void>.value();
+
+  Future<void> _reload(Emitter<TasksState> emit) async {
     final hasList = state.status == TasksStatus.loaded;
     final pending = hasList
         ? state.copyWith(isRefreshing: true)
@@ -63,13 +87,12 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
     // Bloc emits the first state even when it equals the initial one.
     if (pending != state) emit(pending);
     try {
-      final tasks = await _getTasks();
-      final today = CalendarDate.fromLocal(_clock.now());
-      emit(
+      final tasks = await _inOrder(_getTasks.call);
+      _show(
+        emit,
+        tasks,
         state.copyWith(
           status: TasksStatus.loaded,
-          timeline: _buildTimeline(tasks, today: today),
-          today: today,
           loadFailure: () => null,
           isRefreshing: false,
         ),
@@ -81,7 +104,7 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
         hasList
             ? state.copyWith(
                 isRefreshing: false,
-                actionFailure: reportFailure ? _nextFailure(reason) : null,
+                actionFailure: _nextFailure(reason),
               )
             : state.copyWith(
                 status: TasksStatus.failure,
@@ -92,20 +115,81 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
     }
   }
 
-  Future<void> _change(
+  /// Stores a change that only shows once the server has it.
+  Future<void> _save(
     Emitter<TasksState> emit,
-    Future<Object?> Function() action,
-  ) async {
-    var failed = false;
+    Future<Task> Function() store,
+    List<Task> Function(List<Task>, Task) merge, {
+    String? taskId,
+  }) async {
+    _savesInFlight++;
+    emit(state.copyWith(isSaving: true));
     try {
-      await action();
+      final saved = await _inOrder(store);
+      _show(emit, merge(state.tasks, saved), state);
+      await _publishToWidget(state.tasks);
     } on Object catch (error) {
-      failed = true;
-      emit(state.copyWith(actionFailure: _nextFailure(_reasonOf(error))));
+      final reason = _reasonOf(error);
+      _show(
+        emit,
+        _withoutIfGone(state.tasks, taskId, reason),
+        state.copyWith(actionFailure: _nextFailure(reason)),
+      );
+    } finally {
+      _savesInFlight--;
+      emit(state.copyWith(isSaving: _savesInFlight > 0));
     }
-    // After a failed change the cause was already reported; the reload only
-    // makes sure the list matches what is stored.
-    await _reload(emit, reportFailure: !failed);
+  }
+
+  /// Shows [after] in place of [before] at once ([after] `null` removes it)
+  /// and stores it in the background, putting [before] back if that fails.
+  Future<void> _changeNow(
+    Emitter<TasksState> emit, {
+    required Task before,
+    required Task? after,
+    required Future<void> Function() store,
+  }) async {
+    final id = before.id;
+    List<Task> applied(List<Task> tasks) =>
+        after == null ? _removed(tasks, id) : _replaced(tasks, after);
+
+    _show(emit, applied(state.tasks), state);
+    try {
+      await _inOrder(store);
+      // A reload queued before this change may have shown the stored task as
+      // it was before it.
+      _show(emit, applied(state.tasks), state);
+      await _publishToWidget(state.tasks);
+    } on Object catch (error) {
+      final reason = _reasonOf(error);
+      final current = state.tasks.where((task) => task.id == id).firstOrNull;
+      // A later change to the same task already replaced this one on screen
+      // and in the queue, so only an untouched task is put back.
+      final tasks = reason == TaskFailureReason.notFound
+          ? _removed(state.tasks, id)
+          : current == after
+          ? _upserted(state.tasks, before)
+          : state.tasks;
+      _show(emit, tasks, state.copyWith(actionFailure: _nextFailure(reason)));
+    }
+  }
+
+  /// Runs [call] after every server call queued before it.
+  Future<T> _inOrder<T>(Future<T> Function() call) {
+    final result = _serverQueue.then((_) => call());
+    _serverQueue = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
+  }
+
+  void _show(Emitter<TasksState> emit, List<Task> tasks, TasksState base) {
+    final today = CalendarDate.fromLocal(_clock.now());
+    emit(
+      base.copyWith(
+        tasks: List.unmodifiable(tasks),
+        timeline: _buildTimeline(tasks, today: today),
+        today: today,
+      ),
+    );
   }
 
   Future<void> _publishToWidget(List<Task> tasks) async {
@@ -113,7 +197,7 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
       await _publishWidgetTasks(tasks);
     } on Object catch (_) {
       // The widget is secondary: failing to update it must never reach the
-      // screen, and the next reload tries again.
+      // screen, and the next change tries again.
     }
   }
 
@@ -122,4 +206,29 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
 
   static TaskFailureReason _reasonOf(Object error) =>
       error is TaskFailure ? error.reason : TaskFailureReason.unknown;
+
+  static List<Task> _removed(List<Task> tasks, String id) => [
+    for (final task in tasks)
+      if (task.id != id) task,
+  ];
+
+  /// Only replaces a task still on screen, so a change confirmed late never
+  /// brings back a task deleted meanwhile.
+  static List<Task> _replaced(List<Task> tasks, Task changed) => [
+    for (final task in tasks) task.id == changed.id ? changed : task,
+  ];
+
+  static List<Task> _upserted(List<Task> tasks, Task changed) =>
+      tasks.any((task) => task.id == changed.id)
+      ? _replaced(tasks, changed)
+      : [...tasks, changed];
+
+  /// A task the server no longer has was deleted elsewhere.
+  static List<Task> _withoutIfGone(
+    List<Task> tasks,
+    String? id,
+    TaskFailureReason reason,
+  ) => id != null && reason == TaskFailureReason.notFound
+      ? _removed(tasks, id)
+      : tasks;
 }

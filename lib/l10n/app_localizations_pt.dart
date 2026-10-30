@@ -16,6 +16,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get loadingLabel => 'Carregando';
 
   @override
+  String get savingLabel => 'Salvando';
+
+  @override
   String get authSignInTitle => 'Entrar';
 
   @override
@@ -26,6 +29,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get authPasswordLabel => 'Senha';
+
+  @override
+  String get authShowPassword => 'Mostrar senha';
+
+  @override
+  String get authHidePassword => 'Ocultar senha';
 
   @override
   String get authSignInButton => 'Entrar';

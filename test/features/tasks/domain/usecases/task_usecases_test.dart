@@ -175,28 +175,42 @@ void main() {
   });
 
   group('ToggleTask', () {
-    test('completes a pending task at the current UTC instant', () async {
+    test('completes a pending task at the current UTC instant', () {
       final pending = buildTask('1', dueDate: CalendarDate(2026, 10, 30));
 
-      final toggled = await ToggleTask(repository, clock)(pending);
+      final toggled = ToggleTask(repository, clock).toggled(pending);
 
       expect(toggled.completedAt, DateTime.utc(2026, 10, 27, 15, 30));
       expect(toggled.dueDate, pending.dueDate);
-      verify(() => repository.update(toggled)).called(1);
     });
 
-    test('reopens a completed task keeping its due date', () async {
+    test('reopens a completed task keeping its due date', () {
       final completed = buildTask(
         '1',
         dueDate: CalendarDate(2026, 10, 30),
         completedMinute: 3,
       );
 
-      final toggled = await ToggleTask(repository, clock)(completed);
+      final toggled = ToggleTask(repository, clock).toggled(completed);
 
       expect(toggled.isCompleted, isFalse);
       expect(toggled.dueDate, CalendarDate(2026, 10, 30));
       expect(toggled.title, completed.title);
+    });
+
+    test('toggling alone stores nothing', () {
+      ToggleTask(repository, clock).toggled(buildTask('1'));
+
+      verifyNever(() => repository.update(any()));
+    });
+
+    test('stores the toggled task as it is', () async {
+      final toggleTask = ToggleTask(repository, clock);
+      final toggled = toggleTask.toggled(buildTask('1'));
+
+      await toggleTask(toggled);
+
+      verify(() => repository.update(toggled)).called(1);
     });
 
     test('propagates failures from the repository', () {

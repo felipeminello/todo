@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,14 +30,30 @@ import '../../../../helpers/fixed_clock.dart';
 import '../../../../helpers/localized_app.dart';
 import '../../../../helpers/task_factory.dart';
 
-/// Counts loads so refresh triggers can be asserted.
+/// Counts loads so refresh triggers can be asserted, and can hold writes to
+/// look at the screen before the server answers.
 final class _CountingDataSource extends FakeTaskRemoteDataSource {
   int loads = 0;
+
+  /// When set, writes wait for it to complete.
+  Completer<void>? writeGate;
 
   @override
   Future<List<TaskModel>> getAll() {
     loads++;
     return super.getAll();
+  }
+
+  @override
+  Future<TaskModel> create(TaskModel draft) async {
+    await writeGate?.future;
+    return super.create(draft);
+  }
+
+  @override
+  Future<void> update(TaskModel task) async {
+    await writeGate?.future;
+    return super.update(task);
   }
 }
 
@@ -279,6 +297,54 @@ void main() {
 
     expect(find.text('Nova'), findsOneWidget);
     expect((await dataSource.getAll()).single.title, 'Nova');
+  });
+
+  testWidgets('completing shows before the server answers, without reloading', (
+    tester,
+  ) async {
+    await seed([buildTask('1', title: 'Fazer')]);
+    await pump(tester);
+    final gate = dataSource.writeGate = Completer<void>();
+    // A held write would keep the bloc from closing if the test fails early.
+    addTearDown(() => gate.isCompleted ? null : gate.complete());
+
+    await tester.tap(find.byType(Checkbox));
+    await tester.pump();
+
+    expect(find.text('Concluídas (1)'), findsOneWidget);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(dataSource.loads, 1);
+    expect((await dataSource.getAll()).single.completedAt, isNotNull);
+  });
+
+  testWidgets('a progress bar shows while a new task is saved', (tester) async {
+    await pump(tester);
+    final gate = dataSource.writeGate = Completer<void>();
+    // A held write would keep the bloc from closing if the test fails early.
+    addTearDown(() => gate.isCompleted ? null : gate.complete());
+
+    await tester.tap(find.byTooltip('Nova tarefa'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('task-form-title')), 'Nova');
+    await tester.tap(find.byKey(const Key('task-form-save')));
+    await tester.pump(const Duration(seconds: 1));
+
+    final bar = find.byType(LinearProgressIndicator);
+    expect(
+      tester.widget<LinearProgressIndicator>(bar).semanticsLabel,
+      'Salvando',
+    );
+    expect(find.widgetWithText(TaskTile, 'Nova'), findsNothing);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(bar, findsNothing);
+    expect(find.widgetWithText(TaskTile, 'Nova'), findsOneWidget);
+    expect(dataSource.loads, 1);
   });
 
   testWidgets('editing from a tap keeps the task position', (tester) async {

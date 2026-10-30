@@ -21,6 +21,7 @@ class _AuthPageState extends State<AuthPage> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _isSignUp = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -105,8 +106,14 @@ class _AuthPageState extends State<AuthPage> {
                             controller: _password,
                             decoration: InputDecoration(
                               labelText: l10n.authPasswordLabel,
+                              suffixIcon: _PasswordVisibilityButton(
+                                isObscured: _obscurePassword,
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
+                              ),
                             ),
-                            obscureText: true,
+                            obscureText: _obscurePassword,
                             autofillHints: [
                               _isSignUp
                                   ? AutofillHints.newPassword
@@ -154,6 +161,29 @@ class _AuthPageState extends State<AuthPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PasswordVisibilityButton extends StatelessWidget {
+  const _PasswordVisibilityButton({
+    required this.isObscured,
+    required this.onPressed,
+  });
+
+  final bool isObscured;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return IconButton(
+      key: const Key('auth-password-visibility'),
+      tooltip: isObscured ? l10n.authShowPassword : l10n.authHidePassword,
+      icon: Icon(
+        isObscured ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+      ),
+      onPressed: onPressed,
     );
   }
 }

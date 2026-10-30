@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -47,13 +49,21 @@ void main() {
   TaskTimeline timelineOf(List<Task> tasks) =>
       const BuildTaskTimeline()(tasks, today: today);
 
-  TasksState loaded(List<Task> tasks, {TaskActionFailure? failure}) =>
-      TasksState(
-        status: TasksStatus.loaded,
-        timeline: timelineOf(tasks),
-        today: today,
-        actionFailure: failure,
-      );
+  TasksState loaded(
+    List<Task> tasks, {
+    TaskActionFailure? failure,
+    bool isSaving = false,
+  }) => TasksState(
+    status: TasksStatus.loaded,
+    tasks: tasks,
+    timeline: timelineOf(tasks),
+    today: today,
+    isSaving: isSaving,
+    actionFailure: failure,
+  );
+
+  TaskActionFailure failureOf(TaskFailureReason reason, [int sequence = 1]) =>
+      TaskActionFailure(reason, sequence);
 
   void stored(List<Task> tasks) =>
       when(() => repository.getAll()).thenAnswer((_) async => tasks);
@@ -138,12 +148,7 @@ void main() {
       seed: () => loaded([pending]),
       act: (bloc) => bloc.add(const TasksRequested()),
       expect: () => [
-        TasksState(
-          status: TasksStatus.loaded,
-          timeline: timelineOf([pending]),
-          today: today,
-          isRefreshing: true,
-        ),
+        loaded([pending]).copyWith(isRefreshing: true),
         loaded([pending, overdue]),
       ],
     );
@@ -196,116 +201,261 @@ void main() {
     );
   });
 
-  group('changes', () {
+  group('creating and editing', () {
+    final created = buildTask('new');
+    final edited = pending.copyWith(
+      title: 'Editada',
+      description: 'd',
+      dueDate: () => null,
+    );
+    final editParams = UpdateTaskParams(
+      original: pending,
+      title: 'Editada',
+      description: 'd',
+      dueDate: null,
+    );
+
     blocTest<TasksBloc, TasksState>(
-      'adding saves the task and reloads the list',
-      setUp: () {
-        when(() => repository.add(any()))
-            .thenAnswer((_) async => buildTask('new'));
-        stored([pending, buildTask('new')]);
-      },
+      'adding shows saving, then the stored task, without reloading',
+      setUp: () =>
+          when(() => repository.add(any())).thenAnswer((_) async => created),
       build: build,
       seed: () => loaded([pending]),
       act: (bloc) => bloc.add(const TaskAdded(AddTaskParams(title: 'Nova'))),
-      skip: 1,
       expect: () => [
-        loaded([pending, buildTask('new')]),
+        loaded([pending], isSaving: true),
+        loaded([pending, created], isSaving: true),
+        loaded([pending, created]),
       ],
-      verify: (_) => verify(() => repository.add(any())).called(1),
+      verify: (_) {
+        verify(() => repository.add(any())).called(1);
+        verifyNever(() => repository.getAll());
+      },
     );
 
     blocTest<TasksBloc, TasksState>(
-      'updating saves the edited fields',
+      'updating stores the edited fields and shows them in place',
+      build: build,
+      seed: () => loaded([pending, overdue]),
+      act: (bloc) => bloc.add(TaskUpdated(editParams)),
+      expect: () => [
+        loaded([pending, overdue], isSaving: true),
+        loaded([edited, overdue], isSaving: true),
+        loaded([edited, overdue]),
+      ],
+      verify: (_) {
+        verify(() => repository.update(edited)).called(1);
+        verifyNever(() => repository.getAll());
+      },
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'saving stays on until every save has finished',
+      setUp: () =>
+          when(() => repository.add(any())).thenAnswer((_) async => created),
+      build: build,
+      seed: () => loaded([pending]),
+      act: (bloc) => bloc
+        ..add(const TaskAdded(AddTaskParams(title: 'Nova')))
+        ..add(TaskUpdated(editParams)),
+      verify: (bloc) {
+        expect(bloc.state.isSaving, isFalse);
+        expect(bloc.state.tasks, [edited, created]);
+      },
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'a failed save keeps the list and reports once',
+      setUp: () =>
+          when(() => repository.update(any()))
+              .thenAnswer((_) => fail(TaskFailureReason.network)),
+      build: build,
+      seed: () => loaded([pending]),
+      act: (bloc) => bloc.add(TaskUpdated(editParams)),
+      expect: () => [
+        loaded([pending], isSaving: true),
+        loaded(
+          [pending],
+          isSaving: true,
+          failure: failureOf(TaskFailureReason.network),
+        ),
+        loaded([pending], failure: failureOf(TaskFailureReason.network)),
+      ],
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'editing a task deleted elsewhere removes it',
+      setUp: () =>
+          when(() => repository.update(any()))
+              .thenAnswer((_) => fail(TaskFailureReason.notFound)),
+      build: build,
+      seed: () => loaded([pending]),
+      act: (bloc) => bloc.add(TaskUpdated(editParams)),
+      verify: (bloc) => expect(
+        bloc.state,
+        loaded([], failure: failureOf(TaskFailureReason.notFound)),
+      ),
+    );
+  });
+
+  group('completing and deleting', () {
+    late Completer<void> server;
+    final completed = pending.copyWith(
+      completedAt: () => DateTime.utc(2026, 10, 27, 12),
+    );
+
+    setUp(() => server = Completer<void>());
+
+    blocTest<TasksBloc, TasksState>(
+      'completing shows at once, stamped with the instant that is stored',
+      setUp: () =>
+          when(() => repository.update(any())).thenAnswer((_) => server.future),
+      build: build,
+      seed: () => loaded([pending]),
+      act: (bloc) async {
+        bloc.add(TaskCompletionToggled(pending));
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.state.timeline.completed.single.id, 'p');
+        expect(bloc.state.timeline.days, isEmpty);
+        server.complete();
+      },
+      expect: () => [
+        loaded([completed]),
+      ],
+      verify: (_) {
+        verify(() => repository.update(completed)).called(1);
+        verifyNever(() => repository.getAll());
+      },
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'deleting hides the task before the server confirms it',
+      setUp: () =>
+          when(() => repository.delete(any())).thenAnswer((_) => server.future),
+      build: build,
+      seed: () => loaded([pending, overdue]),
+      act: (bloc) async {
+        bloc.add(TaskDeleted(pending));
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.state.tasks, [overdue]);
+        server.complete();
+      },
+      expect: () => [
+        loaded([overdue]),
+      ],
+      verify: (_) {
+        verify(() => repository.delete('p')).called(1);
+        verifyNever(() => repository.getAll());
+      },
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'a failed completion puts the task back and reports once',
+      setUp: () =>
+          when(() => repository.update(any()))
+              .thenAnswer((_) => fail(TaskFailureReason.network)),
+      build: build,
+      seed: () => loaded([pending]),
+      act: (bloc) => bloc.add(TaskCompletionToggled(pending)),
+      expect: () => [
+        loaded([completed]),
+        loaded([pending], failure: failureOf(TaskFailureReason.network)),
+      ],
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'a failed delete puts the task back',
+      setUp: () =>
+          when(() => repository.delete(any()))
+              .thenAnswer((_) => fail(TaskFailureReason.network)),
+      build: build,
+      seed: () => loaded([pending, overdue]),
+      act: (bloc) => bloc.add(TaskDeleted(pending)),
+      expect: () => [
+        loaded([overdue]),
+        loaded([
+          overdue,
+          pending,
+        ], failure: failureOf(TaskFailureReason.network)),
+      ],
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'completing a task deleted elsewhere removes it',
+      setUp: () =>
+          when(() => repository.update(any()))
+              .thenAnswer((_) => fail(TaskFailureReason.notFound)),
+      build: build,
+      seed: () => loaded([pending]),
+      act: (bloc) => bloc.add(TaskCompletionToggled(pending)),
+      expect: () => [
+        loaded([completed]),
+        loaded([], failure: failureOf(TaskFailureReason.notFound)),
+      ],
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'a newer change to the task is kept when an older one fails',
+      setUp: () =>
+          when(() => repository.update(completed)).thenAnswer((_) async {
+            await server.future;
+            throw const TaskFailure(TaskFailureReason.network);
+          }),
+      build: build,
+      seed: () => loaded([pending]),
+      act: (bloc) async {
+        bloc.add(TaskCompletionToggled(pending));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(TaskCompletionToggled(bloc.state.tasks.single));
+        await Future<void>.delayed(Duration.zero);
+        server.complete();
+      },
+      verify: (bloc) {
+        expect(
+          bloc.state,
+          loaded([pending], failure: failureOf(TaskFailureReason.network)),
+        );
+        verifyInOrder([
+          () => repository.update(completed),
+          () => repository.update(pending),
+        ]);
+      },
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'a change waits for the one before it to reach the server',
+      setUp: () =>
+          when(() => repository.update(any())).thenAnswer((_) => server.future),
+      build: build,
+      seed: () => loaded([pending, overdue]),
+      act: (bloc) async {
+        bloc
+          ..add(TaskCompletionToggled(pending))
+          ..add(TaskDeleted(overdue));
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.state.tasks, [completed]);
+        verifyNever(() => repository.delete(any()));
+        server.complete();
+      },
+      verify: (_) => verify(() => repository.delete('o')).called(1),
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'a reload queued before a change does not undo it',
       setUp: () => stored([pending]),
       build: build,
       seed: () => loaded([pending]),
-      act: (bloc) => bloc.add(
-        TaskUpdated(
-          UpdateTaskParams(
-            original: pending,
-            title: 'Editada',
-            description: 'd',
-            dueDate: null,
-          ),
-        ),
-      ),
-      verify: (_) => verify(
-        () => repository.update(
-          pending.copyWith(
-            title: 'Editada',
-            description: 'd',
-            dueDate: () => null,
-          ),
-        ),
-      ).called(1),
-    );
-
-    blocTest<TasksBloc, TasksState>(
-      'deleting removes by id',
-      setUp: () => stored([]),
-      build: build,
-      seed: () => loaded([pending]),
-      act: (bloc) => bloc.add(TaskDeleted(pending)),
-      verify: (bloc) {
-        verify(() => repository.delete('p')).called(1);
-        expect(bloc.state.timeline.isEmpty, isTrue);
-      },
-    );
-
-    blocTest<TasksBloc, TasksState>(
-      'completing stamps the completion and moves the task to completed',
-      setUp: () => stored([
-        pending.copyWith(completedAt: () => DateTime.utc(2026, 10, 27, 12)),
-      ]),
-      build: build,
-      seed: () => loaded([pending]),
-      act: (bloc) => bloc.add(TaskCompletionToggled(pending)),
-      verify: (bloc) {
-        verify(
-          () => repository.update(
-            pending.copyWith(completedAt: () => clock.now().toUtc()),
-          ),
-        ).called(1);
-        expect(bloc.state.timeline.days, isEmpty);
-        expect(bloc.state.timeline.completed.single.id, 'p');
-      },
-    );
-
-    blocTest<TasksBloc, TasksState>(
-      'a failed completion is reported once and the task stays pending',
-      setUp: () {
-        when(() => repository.update(any()))
-            .thenAnswer((_) => fail(TaskFailureReason.network));
-        when(() => repository.getAll())
-            .thenAnswer((_) => fail(TaskFailureReason.network));
-      },
-      build: build,
-      seed: () => loaded([pending]),
-      act: (bloc) => bloc.add(TaskCompletionToggled(pending)),
-      expect: () => [
-        loaded([
-          pending,
-        ], failure: const TaskActionFailure(TaskFailureReason.network, 1)),
-        TasksState(
-          status: TasksStatus.loaded,
-          timeline: timelineOf([pending]),
-          today: today,
-          isRefreshing: true,
-          actionFailure: const TaskActionFailure(TaskFailureReason.network, 1),
-        ),
-        loaded([
-          pending,
-        ], failure: const TaskActionFailure(TaskFailureReason.network, 1)),
-      ],
+      act: (bloc) => bloc
+        ..add(const TasksRequested())
+        ..add(TaskCompletionToggled(pending)),
+      verify: (bloc) => expect(bloc.state.tasks, [completed]),
     );
 
     blocTest<TasksBloc, TasksState>(
       'two equal failures in a row are two distinct messages',
-      setUp: () {
-        when(() => repository.delete(any()))
-            .thenAnswer((_) => fail(TaskFailureReason.notFound));
-        stored([pending]);
-      },
+      setUp: () =>
+          when(() => repository.delete(any()))
+              .thenAnswer((_) => fail(TaskFailureReason.network)),
       build: build,
       seed: () => loaded([pending]),
       act: (bloc) async {
@@ -315,10 +465,11 @@ void main() {
       },
       verify: (bloc) => expect(
         bloc.state.actionFailure,
-        const TaskActionFailure(TaskFailureReason.notFound, 2),
+        failureOf(TaskFailureReason.network, 2),
       ),
     );
   });
+
   group('home screen widget', () {
     blocTest<TasksBloc, TasksState>(
       'loading publishes the stored tasks for today',
@@ -339,7 +490,7 @@ void main() {
     );
 
     blocTest<TasksBloc, TasksState>(
-      'each change publishes the reloaded list',
+      'each confirmed change publishes the list on screen',
       setUp: () {
         when(() => repository.add(any()))
             .thenAnswer((_) async => buildTask('new', dueDate: today));
@@ -349,13 +500,10 @@ void main() {
       act: (bloc) async {
         bloc.add(const TasksRequested());
         await Future<void>.delayed(Duration.zero);
-        stored([pending, buildTask('new', dueDate: today)]);
         bloc.add(const TaskAdded(AddTaskParams(title: 'Nova')));
         await Future<void>.delayed(Duration.zero);
-        stored([buildTask('new', dueDate: today)]);
         bloc.add(TaskDeleted(pending));
         await Future<void>.delayed(Duration.zero);
-        stored(const []);
         bloc.add(TaskCompletionToggled(buildTask('new', dueDate: today)));
       },
       verify: (_) {
@@ -374,6 +522,17 @@ void main() {
           ],
         );
       },
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'a failed change publishes nothing',
+      setUp: () =>
+          when(() => repository.delete(any()))
+              .thenAnswer((_) => fail(TaskFailureReason.network)),
+      build: build,
+      seed: () => loaded([pending]),
+      act: (bloc) => bloc.add(TaskDeleted(pending)),
+      verify: (_) => verifyNever(() => widgetPublisher.publish(any())),
     );
 
     blocTest<TasksBloc, TasksState>(

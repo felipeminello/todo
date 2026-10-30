@@ -8,6 +8,10 @@
   "@loadingLabel": {
     "description": "Rótulo de acessibilidade do indicador de carregamento"
   },
+  "savingLabel": "Salvando",
+  "@savingLabel": {
+    "description": "Rótulo de acessibilidade da barra exibida enquanto uma tarefa criada ou editada é salva"
+  },
   "authSignInTitle": "Entrar",
   "@authSignInTitle": {
     "description": "Título da tela de login"
@@ -23,6 +27,14 @@
   "authPasswordLabel": "Senha",
   "@authPasswordLabel": {
     "description": "Rótulo do campo de senha"
+  },
+  "authShowPassword": "Mostrar senha",
+  "@authShowPassword": {
+    "description": "Dica do botão que exibe a senha digitada"
+  },
+  "authHidePassword": "Ocultar senha",
+  "@authHidePassword": {
+    "description": "Dica do botão que volta a ocultar a senha digitada"
   },
   "authSignInButton": "Entrar",
   "@authSignInButton": {

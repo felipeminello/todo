@@ -127,6 +127,34 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('the password starts hidden and the toggle shows and hides it', (
+    tester,
+  ) async {
+    await pump(tester);
+    bool isObscured() => tester
+        .widget<EditableText>(
+          find.descendant(
+            of: passwordField(),
+            matching: find.byType(EditableText),
+          ),
+        )
+        .obscureText;
+
+    await tester.enterText(passwordField(), 'segredo');
+    expect(isObscured(), isTrue);
+    expect(find.byTooltip('Mostrar senha'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Mostrar senha'));
+    await tester.pump();
+    expect(isObscured(), isFalse);
+    expect(find.byTooltip('Ocultar senha'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Ocultar senha'));
+    await tester.pump();
+    expect(isObscured(), isTrue);
+    expect(find.text('segredo'), findsOneWidget);
+  });
+
   testWidgets('switches to sign up and submits a sign up', (tester) async {
     when(
       () => repository.signUp(
