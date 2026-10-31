@@ -2,7 +2,6 @@ package br.dev.minello.todo.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -45,18 +44,9 @@ import java.util.TimeZone
 class TodayWidget : GlanceAppWidget() {
   override val stateDefinition = HomeWidgetGlanceStateDefinition()
 
-  override val sizeMode =
-      SizeMode.Responsive(
-          setOf(
-              DpSize(110.dp, 110.dp),
-              DpSize(110.dp, 180.dp),
-              DpSize(250.dp, 110.dp),
-              DpSize(250.dp, 180.dp),
-              DpSize(250.dp, 250.dp),
-              DpSize(250.dp, 320.dp),
-              DpSize(250.dp, 400.dp),
-          )
-      )
+  // Responsive buckets would round the height down to the nearest one and
+  // leave rows empty; the exact size lets the list fill the widget.
+  override val sizeMode = SizeMode.Exact
 
   override suspend fun provideGlance(context: Context, id: GlanceId) {
     provideContent {

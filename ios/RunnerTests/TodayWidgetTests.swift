@@ -155,6 +155,13 @@ final class TodayWidgetTests: XCTestCase {
       .message(header: "Hoje", text: "Abra o app para atualizar"))
   }
 
+  func testRowsThatFitGrowWithTheHeightAndNeverDropBelowOne() {
+    // Small and large widgets of a 6.1" iPhone, after the content margins.
+    XCTAssertEqual(WidgetAgenda.rowsThatFit(height: 126, headerHeight: 24, rowHeight: 22), 4)
+    XCTAssertEqual(WidgetAgenda.rowsThatFit(height: 322, headerHeight: 24, rowHeight: 22), 13)
+    XCTAssertEqual(WidgetAgenda.rowsThatFit(height: 30, headerHeight: 24, rowHeight: 22), 1)
+  }
+
   func testMidnightsRunUntilTheDayAfterTheHorizon() {
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = TimeZone(identifier: "America/Sao_Paulo")!

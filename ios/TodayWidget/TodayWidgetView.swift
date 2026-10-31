@@ -3,64 +3,67 @@ import WidgetKit
 
 struct TodayWidgetView: View {
   let entry: TodayEntry
-  @Environment(\.widgetFamily) private var family
 
-  /// Rows that fit with the header, at the default text size.
-  private var capacity: Int {
-    switch family {
-    case .systemLarge: return 8
-    default: return 3
-    }
-  }
+  /// Fixed line heights that follow Dynamic Type, so the rows that fit can
+  /// be counted from the height the system gives the widget.
+  @ScaledMetric(relativeTo: .headline) private var headerHeight: CGFloat = 24
+  @ScaledMetric(relativeTo: .subheadline) private var rowHeight: CGFloat = 22
 
-  private var content: WidgetContent {
+  private func content(height: CGFloat) -> WidgetContent {
     WidgetAgenda.content(
       for: entry.snapshot,
       today: WidgetAgenda.isoDay(of: entry.date, calendar: .autoupdatingCurrent),
-      capacity: capacity
+      capacity: WidgetAgenda.rowsThatFit(
+        height: height, headerHeight: headerHeight, rowHeight: rowHeight)
     )
   }
 
   var body: some View {
-    Group {
-      switch content {
-      case .appIcon:
-        Image("AppLogo")
-          .resizable()
-          .scaledToFit()
-          .frame(maxWidth: 64, maxHeight: 64)
-          .accessibilityHidden(true)
-      case .signedOut(let text):
-        Text(text)
-          .font(.subheadline)
-          .foregroundColor(.secondary)
-          .multilineTextAlignment(.center)
-      case .message(let header, let text):
-        TodayLayout(header: header) {
+    GeometryReader { proxy in
+      Group {
+        switch content(height: proxy.size.height) {
+        case .appIcon:
+          Image("AppLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: 64, maxHeight: 64)
+            .accessibilityHidden(true)
+        case .signedOut(let text):
           Text(text)
             .font(.subheadline)
             .foregroundColor(.secondary)
-        }
-      case .tasks(let header, let overdue, let pending, let rows):
-        TodayLayout(header: header) {
-          // Oldest at the top, most recent at the bottom.
-          if let overdue {
-            OverdueGroupView(text: overdue)
-          }
-          if let pending {
-            Text(pending)
+            .multilineTextAlignment(.center)
+        case .message(let header, let text):
+          TodayLayout(header: header, headerHeight: headerHeight) {
+            Text(text)
               .font(.subheadline)
               .foregroundColor(.secondary)
-              .lineLimit(1)
           }
-          ForEach(rows.reversed(), id: \.id) { row in
-            Text(row.title)
-              .font(.subheadline)
-              .lineLimit(1)
-              .truncationMode(.tail)
+        case .tasks(let header, let overdue, let pending, let rows):
+          TodayLayout(header: header, headerHeight: headerHeight) {
+            // Oldest at the top, most recent at the bottom.
+            if let overdue {
+              OverdueGroupView(text: overdue)
+                .frame(height: rowHeight)
+            }
+            if let pending {
+              Text(pending)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .frame(height: rowHeight)
+            }
+            ForEach(rows.reversed(), id: \.id) { row in
+              Text(row.title)
+                .font(.subheadline)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(height: rowHeight)
+            }
           }
         }
       }
+      .frame(width: proxy.size.width, height: proxy.size.height)
     }
     .widgetBackground()
   }
@@ -69,12 +72,15 @@ struct TodayWidgetView: View {
 /// Header at the top and the content anchored to the bottom edge.
 private struct TodayLayout<Content: View>: View {
   let header: String
+  let headerHeight: CGFloat
   @ViewBuilder let content: Content
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
+    VStack(alignment: .leading, spacing: 0) {
       Text(header)
         .font(.headline)
+        .lineLimit(1)
+        .frame(height: headerHeight, alignment: .topLeading)
         .accessibilityAddTraits(.isHeader)
       Spacer(minLength: 0)
       content

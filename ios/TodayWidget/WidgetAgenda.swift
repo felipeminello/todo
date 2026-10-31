@@ -59,6 +59,13 @@ enum WidgetAgenda {
     )
   }
 
+  /// Rows of [rowHeight] that fit below a header of [headerHeight]. Never
+  /// less than one, so a tiny widget still shows something.
+  static func rowsThatFit(height: CGFloat, headerHeight: CGFloat, rowHeight: CGFloat) -> Int {
+    guard rowHeight > 0 else { return 1 }
+    return max(Int((height - headerHeight) / rowHeight), 1)
+  }
+
   static func isoDay(of date: Date, calendar: Calendar) -> String {
     let day = calendar.dateComponents([.year, .month, .day], from: date)
     return String(
