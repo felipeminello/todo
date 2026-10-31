@@ -14,20 +14,24 @@ sealed interface WidgetContent {
   /** Nothing due (empty) or the snapshot no longer covers the day (stale). */
   data class Message(val header: String, val text: String) : WidgetContent
 
-  /** [rows] keeps the snapshot order, most recent first: the view draws it bottom-up. */
-  data class Tasks(val header: String, val rows: List<WidgetRow>) : WidgetContent
+  /**
+   * [rows] holds today's tasks in the snapshot order, most recent first: the view draws it
+   * bottom-up, below the groups. [overdue] and [pending] group what is not listed in [rows]; each
+   * is `null` when there is nothing to group.
+   */
+  data class Tasks(
+      val header: String,
+      val overdue: String?,
+      val pending: String?,
+      val rows: List<WidgetRow>,
+  ) : WidgetContent
 }
 
-data class WidgetRow(
-    val id: String,
-    val title: String,
-    val isOverdue: Boolean,
-    val accessibilityLabel: String,
-)
+data class WidgetRow(val id: String, val title: String)
 
 /**
  * The part of the rule the native side owns. The Flutter app already chose and ordered the tasks,
- * so here they are only filtered by the local day, cut to what fits and marked overdue.
+ * so here they are only split by the local day, cut to what fits and grouped.
  */
 object WidgetAgenda {
   fun content(snapshot: WidgetSnapshot?, today: String, capacity: Int): WidgetContent {
@@ -35,31 +39,34 @@ object WidgetAgenda {
     val strings = snapshot.strings
     if (!snapshot.signedIn) return WidgetContent.SignedOut(strings.signedOut)
     val coversUntil = snapshot.coversUntil
+    val pendingCount = strings.pendingCount
+    val overdueCount = strings.overdueCount
     if (
         snapshot.version > WidgetSnapshot.SUPPORTED_VERSION ||
             coversUntil == null ||
-            today > coversUntil
+            today > coversUntil ||
+            pendingCount == null ||
+            overdueCount == null
     ) {
       return WidgetContent.Message(strings.header, strings.stale)
     }
 
     // ISO days compare in calendar order.
-    val rows =
-        snapshot.tasks
-            .filter { it.dueDate <= today }
-            .take(capacity.coerceAtLeast(0))
-            .map { task ->
-              val isOverdue = task.dueDate < today
-              WidgetRow(
-                  id = task.id,
-                  title = task.title,
-                  isOverdue = isOverdue,
-                  accessibilityLabel =
-                      if (isOverdue) "${strings.overdue}: ${task.title}" else task.title,
-              )
-            }
-    if (rows.isEmpty()) return WidgetContent.Message(strings.header, strings.empty)
-    return WidgetContent.Tasks(strings.header, rows)
+    val todays = snapshot.tasks.filter { it.dueDate == today }
+    val overdue = snapshot.tasks.count { it.dueDate < today }
+    if (todays.isEmpty() && overdue == 0) return WidgetContent.Message(strings.header, strings.empty)
+
+    // The overdue group always takes a row. When today's tasks do not all fit, one more row goes
+    // to the group of the oldest ones.
+    val free = (capacity - if (overdue > 0) 1 else 0).coerceAtLeast(0)
+    val shown = if (todays.size <= free) todays.size else (free - 1).coerceAtLeast(0)
+    val pending = todays.size - shown
+    return WidgetContent.Tasks(
+        header = strings.header,
+        overdue = if (overdue > 0) overdueCount.format(overdue) else null,
+        pending = if (pending > 0) pendingCount.format(pending) else null,
+        rows = todays.take(shown).map { WidgetRow(it.id, it.title) },
+    )
   }
 
   fun isoDay(timeMillis: Long, timeZone: TimeZone): String {

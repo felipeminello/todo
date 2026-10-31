@@ -145,4 +145,8 @@ A persistência é feita no **Firebase** (decisão do usuário), provavelmente c
 
 ## Git
 
-**Nunca rode comandos do git.** O usuário faz todo o controle de versão. Não execute `git` de nenhuma forma, e não sugira commits, branches, `git init`, PRs ou qualquer outra operação relacionada.
+O usuário faz todo o controle de versão.
+
+- **Liberados**, só para consulta: `git diff`, `git status`, `git log` e `git show`.
+- **NUNCA** rode nenhum outro comando do git, principalmente os que alteram o repositório, o histórico ou o remoto: `commit`, `branch`, `checkout`, `switch`, `pull`, `push`, `merge`, `rebase`, `reset`, `stash`, `add`, `init` e afins.
+- Não sugira commits, branches, PRs ou qualquer outra operação de controle de versão.

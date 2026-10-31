@@ -1,18 +1,21 @@
 import XCTest
 
-/// The widget's own share of the rule: filter by the local day, cut to what
-/// fits, mark overdue. Ordering is the Flutter app's job and is tested there.
+/// The widget's own share of the rule: split by the local day, cut to what
+/// fits, group the rest. Ordering is the Flutter app's job and is tested there.
 final class TodayWidgetTests: XCTestCase {
   private let strings = """
     {"header":"Hoje","empty":"Nada para hoje","stale":"Abra o app para atualizar",\
-    "signedOut":"Entre no app para ver suas tarefas","overdue":"Atrasada"}
+    "signedOut":"Entre no app para ver suas tarefas",\
+    "pendingCount":{"one":"1 tarefa pendente","other":"{count} tarefas pendentes"},\
+    "overdueCount":{"one":"1 tarefa atrasada","other":"{count} tarefas atrasadas"}}
     """
 
   private func snapshot(
-    version: Int = 1,
+    version: Int = 2,
     signedIn: Bool = true,
     coversUntil: String? = "2026-11-05",
-    tasks: [(id: String, dueDate: String)] = []
+    tasks: [(id: String, dueDate: String)] = [],
+    strings: String? = nil
   ) -> WidgetSnapshot {
     let taskJson = tasks.map {
       #"{"id":"\#($0.id)","title":"Task \#($0.id)","dueDate":"\#($0.dueDate)","createdAt":"2026-10-01T12:00:00.000Z"}"#
@@ -20,14 +23,16 @@ final class TodayWidgetTests: XCTestCase {
     let covers = coversUntil.map { #","coversUntil":"\#($0)""# } ?? ""
     let json = """
       {"version":\(version),"signedIn":\(signedIn),"generatedAt":"2026-10-29T13:02:00.000Z"\
-      \(covers),"tasks":[\(taskJson)],"strings":\(strings)}
+      \(covers),"tasks":[\(taskJson)],"strings":\(strings ?? self.strings)}
       """
     return WidgetSnapshot.decode(json)!
   }
 
-  private func rows(_ content: WidgetContent) -> [String] {
-    guard case .tasks(_, let rows) = content else { return [] }
-    return rows.map { "\($0.id)\($0.isOverdue ? "!" : "")" }
+  /// Rows top to bottom, as drawn: overdue group, pending group, then
+  /// today's tasks from the oldest to the most recent.
+  private func lines(_ content: WidgetContent) -> [String] {
+    guard case .tasks(_, let overdue, let pending, let rows) = content else { return [] }
+    return [overdue, pending].compactMap { $0 } + rows.reversed().map(\.id)
   }
 
   func testNoSnapshotShowsOnlyTheIcon() {
@@ -52,38 +57,66 @@ final class TodayWidgetTests: XCTestCase {
       for: snapshot(tasks: [("tomorrow", "2026-10-30"), ("today", "2026-10-29")]),
       today: "2026-10-29", capacity: 3)
 
-    XCTAssertEqual(rows(content), ["today"])
+    XCTAssertEqual(lines(content), ["today"])
   }
 
-  func testMarksOverdueTasksAndLabelsThemForScreenReaders() {
-    let content = WidgetAgenda.content(
-      for: snapshot(tasks: [("today", "2026-10-29"), ("late", "2026-10-28")]),
-      today: "2026-10-29", capacity: 3)
-
-    XCTAssertEqual(rows(content), ["today", "late!"])
-    guard case .tasks(let header, let found) = content else { return XCTFail() }
-    XCTAssertEqual(header, "Hoje")
-    XCTAssertEqual(found[1].accessibilityLabel, "Atrasada: Task late")
-    XCTAssertEqual(found[0].accessibilityLabel, "Task today")
-  }
-
-  func testCutsToCapacityKeepingTheMostRecent() {
+  func testGroupsOverdueTasksInsteadOfListingThem() {
     let content = WidgetAgenda.content(
       for: snapshot(tasks: [
-        ("t2", "2026-10-29"), ("t1", "2026-10-29"), ("o1", "2026-10-28"), ("o2", "2026-10-25"),
+        ("today", "2026-10-29"), ("late", "2026-10-28"), ("later", "2026-10-20"),
+      ]),
+      today: "2026-10-29", capacity: 8)
+
+    XCTAssertEqual(
+      content,
+      .tasks(
+        header: "Hoje", overdue: "2 tarefas atrasadas", pending: nil,
+        rows: [WidgetRow(id: "today", title: "Task today")]))
+  }
+
+  func testSingleOverdueTaskUsesTheSingular() {
+    let content = WidgetAgenda.content(
+      for: snapshot(tasks: [("late", "2026-10-28")]), today: "2026-10-29", capacity: 3)
+
+    XCTAssertEqual(lines(content), ["1 tarefa atrasada"])
+  }
+
+  func testEverythingFitsWithoutPendingGroup() {
+    let content = WidgetAgenda.content(
+      for: snapshot(tasks: [("t3", "2026-10-29"), ("t2", "2026-10-29"), ("t1", "2026-10-29")]),
+      today: "2026-10-29", capacity: 3)
+
+    XCTAssertEqual(lines(content), ["t1", "t2", "t3"])
+  }
+
+  func testGroupsTheOldestOfTodayWhenTheyDoNotFit() {
+    let content = WidgetAgenda.content(
+      for: snapshot(tasks: [
+        ("t4", "2026-10-29"), ("t3", "2026-10-29"), ("t2", "2026-10-29"), ("t1", "2026-10-29"),
       ]),
       today: "2026-10-29", capacity: 3)
 
-    XCTAssertEqual(rows(content), ["t2", "t1", "o1!"])
+    XCTAssertEqual(lines(content), ["2 tarefas pendentes", "t3", "t4"])
+  }
+
+  func testOverdueGroupTakesARowBeforeThePendingOne() {
+    let content = WidgetAgenda.content(
+      for: snapshot(tasks: [
+        ("t3", "2026-10-29"), ("t2", "2026-10-29"), ("t1", "2026-10-29"), ("o1", "2026-10-28"),
+      ]),
+      today: "2026-10-29", capacity: 3)
+
+    XCTAssertEqual(lines(content), ["1 tarefa atrasada", "2 tarefas pendentes", "t3"])
   }
 
   func testTomorrowsTaskBecomesTodayAndTodaysBecomesOverdue() {
     let data = snapshot(tasks: [("b", "2026-10-30"), ("a", "2026-10-29")])
 
     XCTAssertEqual(
-      rows(WidgetAgenda.content(for: data, today: "2026-10-29", capacity: 3)), ["a"])
+      lines(WidgetAgenda.content(for: data, today: "2026-10-29", capacity: 3)), ["a"])
     XCTAssertEqual(
-      rows(WidgetAgenda.content(for: data, today: "2026-10-30", capacity: 3)), ["b", "a!"])
+      lines(WidgetAgenda.content(for: data, today: "2026-10-30", capacity: 3)),
+      ["1 tarefa atrasada", "b"])
   }
 
   func testNothingDueShowsTheEmptyMessage() {
@@ -96,7 +129,9 @@ final class TodayWidgetTests: XCTestCase {
   func testPastTheHorizonIsStale() {
     let data = snapshot(coversUntil: "2026-11-05", tasks: [("a", "2026-10-29")])
 
-    XCTAssertEqual(rows(WidgetAgenda.content(for: data, today: "2026-11-05", capacity: 3)), ["a!"])
+    XCTAssertEqual(
+      lines(WidgetAgenda.content(for: data, today: "2026-11-05", capacity: 3)),
+      ["1 tarefa atrasada"])
     XCTAssertEqual(
       WidgetAgenda.content(for: data, today: "2026-11-06", capacity: 3),
       .message(header: "Hoje", text: "Abra o app para atualizar"))
@@ -104,7 +139,19 @@ final class TodayWidgetTests: XCTestCase {
 
   func testNewerFormatIsStale() {
     XCTAssertEqual(
-      WidgetAgenda.content(for: snapshot(version: 2), today: "2026-10-29", capacity: 3),
+      WidgetAgenda.content(for: snapshot(version: 3), today: "2026-10-29", capacity: 3),
+      .message(header: "Hoje", text: "Abra o app para atualizar"))
+  }
+
+  func testOlderFormatWithoutGroupTextsIsStale() {
+    let v1Strings = """
+      {"header":"Hoje","empty":"Nada para hoje","stale":"Abra o app para atualizar",\
+      "signedOut":"Entre no app para ver suas tarefas","overdue":"Atrasada"}
+      """
+    let data = snapshot(version: 1, tasks: [("a", "2026-10-29")], strings: v1Strings)
+
+    XCTAssertEqual(
+      WidgetAgenda.content(for: data, today: "2026-10-29", capacity: 3),
       .message(header: "Hoje", text: "Abra o app para atualizar"))
   }
 

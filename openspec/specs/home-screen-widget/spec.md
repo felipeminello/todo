@@ -22,7 +22,7 @@ O app SHALL oferecer um widget de tela inicial no iOS e no Android. No iOS MUST 
 - **THEN** o app se comporta como antes e não exibe erro relacionado ao widget
 
 ### Requirement: Tarefas exibidas no widget
-O widget SHALL mostrar apenas tarefas pendentes cujo vencimento é hoje ou anterior a hoje, no calendário local do dispositivo. Tarefas concluídas, sem data de vencimento ou com vencimento futuro MUST NOT aparecer. Só o título de cada tarefa é exibido.
+O widget SHALL considerar apenas tarefas pendentes cujo vencimento é hoje ou anterior a hoje, no calendário local do dispositivo. Tarefas concluídas, sem data de vencimento ou com vencimento futuro MUST NOT aparecer nem ser contadas. Das tarefas de hoje, só o título é exibido. As atrasadas MUST NOT ser listadas uma a uma: elas aparecem só no agrupamento de atrasadas.
 
 #### Scenario: Pendente de hoje
 - **WHEN** existe uma tarefa pendente com vencimento hoje
@@ -36,47 +36,47 @@ O widget SHALL mostrar apenas tarefas pendentes cujo vencimento é hoje ou anter
 - **WHEN** existem uma tarefa pendente sem data e uma com vencimento amanhã
 - **THEN** nenhuma das duas aparece no widget
 
-#### Scenario: Atrasada aparece
+#### Scenario: Atrasada entra no agrupamento
 - **WHEN** existe uma tarefa pendente com vencimento ontem
-- **THEN** o título dela aparece no widget como atrasada, se houver espaço
+- **THEN** o título dela não aparece no widget, e ela é contada em "1 tarefa atrasada"
 
-### Requirement: Prioridade e ordem das tarefas
-O widget SHALL priorizar as tarefas de hoje e usar o espaço restante para as atrasadas. As tarefas MUST ser empilhadas de baixo para cima, da mais recente (embaixo) para a mais antiga (em cima): primeiro pela data de vencimento e, em caso de empate, pela data de criação. Quando não cabem todas, as que ficam de fora MUST ser as do topo, sem indicador de quantidade omitida.
+### Requirement: Ordem e agrupamentos
+O widget SHALL empilhar as linhas de baixo para cima, da mais recente (embaixo) para a mais antiga (em cima). As tarefas de hoje MUST ser ordenadas pela data de criação. Acima delas ficam os agrupamentos, nesta ordem de cima para baixo: o de atrasadas ("{X} tarefas atrasadas"), quando há alguma atrasada, e o de pendentes ("{X} tarefas pendentes"), quando as tarefas de hoje não cabem todas. Cada agrupamento ocupa uma linha. O de pendentes MUST reunir as tarefas de hoje criadas há mais tempo, e as linhas restantes mostram as mais recentes. Com contagem 1, os textos MUST ficar no singular ("1 tarefa atrasada", "1 tarefa pendente").
 
-#### Scenario: Hoje abaixo das atrasadas
-- **WHEN** há tarefas de hoje e atrasadas, e todas cabem
-- **THEN** as de hoje ocupam as linhas de baixo e as atrasadas ficam acima delas
-
-#### Scenario: Atrasadas por vencimento
-- **WHEN** há uma atrasada de ontem e outra de três dias atrás
-- **THEN** a de ontem fica abaixo da de três dias atrás
+#### Scenario: Atrasadas agrupadas
+- **WHEN** há uma tarefa de hoje e duas atrasadas, e o widget comporta oito linhas
+- **THEN** aparecem "2 tarefas atrasadas" e, abaixo, a tarefa de hoje
 
 #### Scenario: Desempate por criação
 - **WHEN** duas tarefas vencem hoje e uma foi criada depois da outra
 - **THEN** a criada mais recentemente fica mais embaixo
 
-#### Scenario: Atrasadas saem primeiro
-- **WHEN** o widget comporta três linhas e há duas tarefas de hoje e duas atrasadas
-- **THEN** aparecem as duas de hoje e a atrasada de vencimento mais recente, e a outra atrasada fica de fora
+#### Scenario: Tarefas de hoje que cabem
+- **WHEN** o widget comporta três linhas e há três tarefas de hoje e nenhuma atrasada
+- **THEN** aparecem as três, sem agrupamento
 
-#### Scenario: Só as de hoje já excedem o espaço
-- **WHEN** o widget comporta três linhas e há cinco tarefas de hoje
-- **THEN** aparecem as três criadas mais recentemente, nenhuma atrasada aparece e não há indicador "+N"
+#### Scenario: Tarefas de hoje que não cabem
+- **WHEN** o widget comporta três linhas e há quatro tarefas de hoje e nenhuma atrasada
+- **THEN** aparecem "2 tarefas pendentes" e, abaixo, as duas criadas mais recentemente
 
-### Requirement: Destaque de tarefa atrasada no widget
-Uma tarefa atrasada SHALL ser exibida no widget em laranja e acompanhada de um ícone. A cor MUST NOT ser o único sinal, o leitor de tela MUST anunciar a tarefa como atrasada, e o laranja MUST ter contraste mínimo de 4,5:1 sobre o fundo do widget nos temas claro e escuro.
+#### Scenario: Atrasadas e pendentes juntas
+- **WHEN** o widget comporta três linhas e há três tarefas de hoje e uma atrasada
+- **THEN** aparecem, de cima para baixo, "1 tarefa atrasada", "2 tarefas pendentes" e a tarefa de hoje criada mais recentemente
+
+### Requirement: Destaque do agrupamento de atrasadas
+O agrupamento de atrasadas SHALL ser exibido em laranja e acompanhado de um ícone. O agrupamento de pendentes MUST usar a cor secundária do texto. O laranja MUST ter contraste mínimo de 4,5:1 sobre o fundo do widget nos temas claro e escuro.
 
 #### Scenario: Identificação sem depender da cor
-- **WHEN** uma tarefa atrasada aparece no widget
-- **THEN** ela é exibida em laranja e com um ícone de atraso, e as de hoje não têm esse ícone
+- **WHEN** há tarefas atrasadas
+- **THEN** o texto "{X} tarefas atrasadas" é exibido em laranja e com um ícone de atraso, e as tarefas de hoje não têm esse ícone
 
 #### Scenario: Leitor de tela
-- **WHEN** o VoiceOver ou o TalkBack lê uma tarefa atrasada no widget
-- **THEN** a leitura inclui que a tarefa está atrasada
+- **WHEN** o VoiceOver ou o TalkBack lê o agrupamento de atrasadas
+- **THEN** a leitura é o próprio texto, que já diz que as tarefas estão atrasadas
 
 #### Scenario: Tema escuro
 - **WHEN** o sistema está no tema escuro
-- **THEN** o laranja das atrasadas usa a variante escura, com contraste mínimo de 4,5:1 sobre o fundo
+- **THEN** o laranja do agrupamento usa a variante escura, com contraste mínimo de 4,5:1 sobre o fundo
 
 ### Requirement: Layout e estado vazio
 O widget SHALL exibir o cabeçalho "Hoje" no topo e a lista ancorada na parte de baixo. Quando não há tarefa para exibir, ele MUST mostrar a mensagem "Nada para hoje". Os textos do widget MUST estar em português do Brasil.
@@ -132,7 +132,7 @@ O widget SHALL se manter correto na virada do dia sem que o app seja aberto: as 
 
 #### Scenario: Tarefa de ontem vira atrasada
 - **WHEN** uma tarefa de ontem continua pendente e o dia vira sem o app ser aberto
-- **THEN** o widget a exibe como atrasada, e não como de hoje
+- **THEN** o widget a conta no agrupamento de atrasadas, e não a lista como de hoje
 
 #### Scenario: Mudança de fuso ou de hora
 - **WHEN** o usuário muda o fuso horário ou a hora do aparelho
@@ -143,7 +143,7 @@ O conteúdo gravado SHALL cobrir as tarefas com vencimento até 7 dias depois do
 
 #### Scenario: Dentro do horizonte
 - **WHEN** o app foi aberto há 6 dias
-- **THEN** o widget exibe as tarefas de hoje e as atrasadas normalmente
+- **THEN** o widget exibe as tarefas de hoje e o agrupamento de atrasadas normalmente
 
 #### Scenario: Além do horizonte
 - **WHEN** o app não é aberto há 8 dias

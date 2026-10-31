@@ -267,5 +267,31 @@
   "widgetSignedOut": "Entre no app para ver suas tarefas",
   "@widgetSignedOut": {
     "description": "Mensagem do widget de tela inicial quando não há usuário conectado"
+  },
+  "widgetPendingOne": "1 tarefa pendente",
+  "@widgetPendingOne": {
+    "description": "Agrupamento do widget de tela inicial para a única tarefa de hoje que não coube"
+  },
+  "widgetPendingOther": "{count} tarefas pendentes",
+  "@widgetPendingOther": {
+    "description": "Agrupamento do widget de tela inicial para as tarefas de hoje que não couberam. O widget nativo troca {count} pelo número, então o app passa o próprio marcador",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetOverdueOne": "1 tarefa atrasada",
+  "@widgetOverdueOne": {
+    "description": "Agrupamento do widget de tela inicial quando há uma única tarefa atrasada"
+  },
+  "widgetOverdueOther": "{count} tarefas atrasadas",
+  "@widgetOverdueOther": {
+    "description": "Agrupamento do widget de tela inicial para as tarefas atrasadas. O widget nativo troca {count} pelo número, então o app passa o próprio marcador",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -453,6 +453,30 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Entre no app para ver suas tarefas'**
   String get widgetSignedOut;
+
+  /// Agrupamento do widget de tela inicial para a única tarefa de hoje que não coube
+  ///
+  /// In pt, this message translates to:
+  /// **'1 tarefa pendente'**
+  String get widgetPendingOne;
+
+  /// Agrupamento do widget de tela inicial para as tarefas de hoje que não couberam. O widget nativo troca {count} pelo número, então o app passa o próprio marcador
+  ///
+  /// In pt, this message translates to:
+  /// **'{count} tarefas pendentes'**
+  String widgetPendingOther(String count);
+
+  /// Agrupamento do widget de tela inicial quando há uma única tarefa atrasada
+  ///
+  /// In pt, this message translates to:
+  /// **'1 tarefa atrasada'**
+  String get widgetOverdueOne;
+
+  /// Agrupamento do widget de tela inicial para as tarefas atrasadas. O widget nativo troca {count} pelo número, então o app passa o próprio marcador
+  ///
+  /// In pt, this message translates to:
+  /// **'{count} tarefas atrasadas'**
+  String widgetOverdueOther(String count);
 }
 
 class _AppLocalizationsDelegate

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todo/core/time/calendar_date.dart';
+import 'package:todo/features/tasks/data/widget/widget_count_text.dart';
 import 'package:todo/features/tasks/data/widget/widget_snapshot_codec.dart';
 import 'package:todo/features/tasks/data/widget/widget_strings.dart';
 import 'package:todo/features/tasks/domain/entities/widget_task_snapshot.dart';
@@ -14,7 +15,14 @@ void main() {
     empty: 'Nada para hoje',
     stale: 'Abra o app para atualizar',
     signedOut: 'Entre no app para ver suas tarefas',
-    overdue: 'Atrasada',
+    pendingCount: WidgetCountText(
+      one: '1 tarefa pendente',
+      other: '{count} tarefas pendentes',
+    ),
+    overdueCount: WidgetCountText(
+      one: '1 tarefa atrasada',
+      other: '{count} tarefas atrasadas',
+    ),
   );
   const codec = WidgetSnapshotCodec(strings);
   const stringsJson = {
@@ -22,13 +30,20 @@ void main() {
     'empty': 'Nada para hoje',
     'stale': 'Abra o app para atualizar',
     'signedOut': 'Entre no app para ver suas tarefas',
-    'overdue': 'Atrasada',
+    'pendingCount': {
+      'one': '1 tarefa pendente',
+      'other': '{count} tarefas pendentes',
+    },
+    'overdueCount': {
+      'one': '1 tarefa atrasada',
+      'other': '{count} tarefas atrasadas',
+    },
   };
 
   Map<String, Object?> decode(String json) =>
       jsonDecode(json) as Map<String, Object?>;
 
-  test('encodes a snapshot with tasks in the v1 format', () {
+  test('encodes a snapshot with tasks in the v2 format', () {
     final snapshot = WidgetTaskSnapshot(
       tasks: [
         buildTask(
@@ -48,7 +63,7 @@ void main() {
     );
 
     expect(decode(codec.encode(snapshot)), {
-      'version': 1,
+      'version': 2,
       'signedIn': true,
       'generatedAt': '2026-10-29T13:02:00.000Z',
       'coversUntil': '2026-11-05',
@@ -116,7 +131,7 @@ void main() {
 
   test('signed-out snapshot carries no task data', () {
     expect(decode(codec.encodeSignedOut()), {
-      'version': 1,
+      'version': 2,
       'signedIn': false,
       'tasks': <Object>[],
       'strings': stringsJson,

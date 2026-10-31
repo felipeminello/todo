@@ -1,3 +1,4 @@
+import 'package:todo/features/tasks/data/widget/widget_count_text.dart';
 import 'package:todo/features/tasks/data/widget/widget_strings.dart';
 import 'package:todo/l10n/app_localizations.dart';
 
@@ -7,5 +8,12 @@ WidgetStrings homeWidgetStrings(AppLocalizations l10n) => WidgetStrings(
   empty: l10n.widgetEmpty,
   stale: l10n.widgetStale,
   signedOut: l10n.widgetSignedOut,
-  overdue: l10n.tasksOverdueLabel,
+  pendingCount: WidgetCountText(
+    one: l10n.widgetPendingOne,
+    other: l10n.widgetPendingOther(WidgetCountText.countToken),
+  ),
+  overdueCount: WidgetCountText(
+    one: l10n.widgetOverdueOne,
+    other: l10n.widgetOverdueOther(WidgetCountText.countToken),
+  ),
 );

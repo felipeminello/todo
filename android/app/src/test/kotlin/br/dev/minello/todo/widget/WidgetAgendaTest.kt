@@ -7,19 +7,22 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * The widget's own share of the rule: filter by the local day, cut to what fits, mark overdue.
+ * The widget's own share of the rule: split by the local day, cut to what fits, group the rest.
  * Ordering is the Flutter app's job and is tested there.
  */
 class WidgetAgendaTest {
   private val strings =
       """{"header":"Hoje","empty":"Nada para hoje","stale":"Abra o app para atualizar",""" +
-          """"signedOut":"Entre no app para ver suas tarefas","overdue":"Atrasada"}"""
+          """"signedOut":"Entre no app para ver suas tarefas",""" +
+          """"pendingCount":{"one":"1 tarefa pendente","other":"{count} tarefas pendentes"},""" +
+          """"overdueCount":{"one":"1 tarefa atrasada","other":"{count} tarefas atrasadas"}}"""
 
   private fun snapshot(
-      version: Int = 1,
+      version: Int = 2,
       signedIn: Boolean = true,
       coversUntil: String? = "2026-11-05",
       tasks: List<Pair<String, String>> = emptyList(),
+      strings: String = this.strings,
   ): WidgetSnapshot {
     val taskJson =
         tasks.joinToString(",") { (id, dueDate) ->
@@ -34,9 +37,14 @@ class WidgetAgendaTest {
     )!!
   }
 
-  private fun rows(content: WidgetContent): List<String> =
-      (content as? WidgetContent.Tasks)?.rows?.map { it.id + if (it.isOverdue) "!" else "" }
-          ?: emptyList()
+  /**
+   * Rows top to bottom, as drawn: overdue group, pending group, then today's tasks from the oldest
+   * to the most recent.
+   */
+  private fun lines(content: WidgetContent): List<String> {
+    val tasks = content as? WidgetContent.Tasks ?: return emptyList()
+    return listOfNotNull(tasks.overdue, tasks.pending) + tasks.rows.asReversed().map { it.id }
+  }
 
   @Test
   fun `no snapshot shows only the icon`() {
@@ -67,51 +75,107 @@ class WidgetAgendaTest {
             3,
         )
 
-    assertEquals(listOf("today"), rows(content))
+    assertEquals(listOf("today"), lines(content))
   }
 
   @Test
-  fun `marks overdue tasks and labels them for screen readers`() {
-    val content =
-        WidgetAgenda.content(
-            snapshot(tasks = listOf("today" to "2026-10-29", "late" to "2026-10-28")),
-            "2026-10-29",
-            3,
-        )
-
-    assertEquals(listOf("today", "late!"), rows(content))
-    val found = (content as WidgetContent.Tasks).rows
-    assertEquals("Hoje", content.header)
-    assertEquals("Atrasada: Task late", found[1].accessibilityLabel)
-    assertEquals("Task today", found[0].accessibilityLabel)
-  }
-
-  @Test
-  fun `cuts to capacity keeping the most recent`() {
+  fun `groups overdue tasks instead of listing them`() {
     val content =
         WidgetAgenda.content(
             snapshot(
                 tasks =
                     listOf(
+                        "today" to "2026-10-29",
+                        "late" to "2026-10-28",
+                        "later" to "2026-10-20",
+                    )
+            ),
+            "2026-10-29",
+            8,
+        )
+
+    assertEquals(
+        WidgetContent.Tasks(
+            header = "Hoje",
+            overdue = "2 tarefas atrasadas",
+            pending = null,
+            rows = listOf(WidgetRow("today", "Task today")),
+        ),
+        content,
+    )
+  }
+
+  @Test
+  fun `a single overdue task uses the singular`() {
+    val content =
+        WidgetAgenda.content(snapshot(tasks = listOf("late" to "2026-10-28")), "2026-10-29", 3)
+
+    assertEquals(listOf("1 tarefa atrasada"), lines(content))
+  }
+
+  @Test
+  fun `everything fits without a pending group`() {
+    val content =
+        WidgetAgenda.content(
+            snapshot(
+                tasks = listOf("t3" to "2026-10-29", "t2" to "2026-10-29", "t1" to "2026-10-29")
+            ),
+            "2026-10-29",
+            3,
+        )
+
+    assertEquals(listOf("t1", "t2", "t3"), lines(content))
+  }
+
+  @Test
+  fun `groups the oldest of today when they do not fit`() {
+    val content =
+        WidgetAgenda.content(
+            snapshot(
+                tasks =
+                    listOf(
+                        "t4" to "2026-10-29",
+                        "t3" to "2026-10-29",
                         "t2" to "2026-10-29",
                         "t1" to "2026-10-29",
-                        "o1" to "2026-10-28",
-                        "o2" to "2026-10-25",
                     )
             ),
             "2026-10-29",
             3,
         )
 
-    assertEquals(listOf("t2", "t1", "o1!"), rows(content))
+    assertEquals(listOf("2 tarefas pendentes", "t3", "t4"), lines(content))
+  }
+
+  @Test
+  fun `the overdue group takes a row before the pending one`() {
+    val content =
+        WidgetAgenda.content(
+            snapshot(
+                tasks =
+                    listOf(
+                        "t3" to "2026-10-29",
+                        "t2" to "2026-10-29",
+                        "t1" to "2026-10-29",
+                        "o1" to "2026-10-28",
+                    )
+            ),
+            "2026-10-29",
+            3,
+        )
+
+    assertEquals(listOf("1 tarefa atrasada", "2 tarefas pendentes", "t3"), lines(content))
   }
 
   @Test
   fun `tomorrow's task becomes today's and today's becomes overdue`() {
     val data = snapshot(tasks = listOf("b" to "2026-10-30", "a" to "2026-10-29"))
 
-    assertEquals(listOf("a"), rows(WidgetAgenda.content(data, "2026-10-29", 3)))
-    assertEquals(listOf("b", "a!"), rows(WidgetAgenda.content(data, "2026-10-30", 3)))
+    assertEquals(listOf("a"), lines(WidgetAgenda.content(data, "2026-10-29", 3)))
+    assertEquals(
+        listOf("1 tarefa atrasada", "b"),
+        lines(WidgetAgenda.content(data, "2026-10-30", 3)),
+    )
   }
 
   @Test
@@ -126,7 +190,7 @@ class WidgetAgendaTest {
   fun `past the horizon is stale`() {
     val data = snapshot(coversUntil = "2026-11-05", tasks = listOf("a" to "2026-10-29"))
 
-    assertEquals(listOf("a!"), rows(WidgetAgenda.content(data, "2026-11-05", 3)))
+    assertEquals(listOf("1 tarefa atrasada"), lines(WidgetAgenda.content(data, "2026-11-05", 3)))
     assertEquals(
         WidgetContent.Message("Hoje", "Abra o app para atualizar"),
         WidgetAgenda.content(data, "2026-11-06", 3),
@@ -137,7 +201,20 @@ class WidgetAgendaTest {
   fun `newer format is stale`() {
     assertEquals(
         WidgetContent.Message("Hoje", "Abra o app para atualizar"),
-        WidgetAgenda.content(snapshot(version = 2), "2026-10-29", 3),
+        WidgetAgenda.content(snapshot(version = 3), "2026-10-29", 3),
+    )
+  }
+
+  @Test
+  fun `older format without group texts is stale`() {
+    val v1Strings =
+        """{"header":"Hoje","empty":"Nada para hoje","stale":"Abra o app para atualizar",""" +
+            """"signedOut":"Entre no app para ver suas tarefas","overdue":"Atrasada"}"""
+    val data = snapshot(version = 1, tasks = listOf("a" to "2026-10-29"), strings = v1Strings)
+
+    assertEquals(
+        WidgetContent.Message("Hoje", "Abra o app para atualizar"),
+        WidgetAgenda.content(data, "2026-10-29", 3),
     )
   }
 

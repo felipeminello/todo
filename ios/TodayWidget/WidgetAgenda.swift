@@ -7,22 +7,22 @@ enum WidgetContent: Equatable {
   case signedOut(text: String)
   /// Nothing due (empty) or the snapshot no longer covers the day (stale).
   case message(header: String, text: String)
-  case tasks(header: String, rows: [WidgetRow])
+  /// [overdue] and [pending] group what is not listed in [rows]; each is
+  /// `nil` when there is nothing to group.
+  case tasks(header: String, overdue: String?, pending: String?, rows: [WidgetRow])
 }
 
 struct WidgetRow: Equatable {
   let id: String
   let title: String
-  let isOverdue: Bool
-  let accessibilityLabel: String
 }
 
 /// The part of the rule the native side owns. The Flutter app already chose
-/// and ordered the tasks, so here they are only filtered by the local day,
-/// cut to what fits and marked overdue.
+/// and ordered the tasks, so here they are only split by the local day, cut
+/// to what fits and grouped.
 enum WidgetAgenda {
-  /// [rows] keeps the snapshot order, most recent first: the view draws it
-  /// bottom-up.
+  /// [rows] holds today's tasks in the snapshot order, most recent first:
+  /// the view draws it bottom-up, below the groups.
   static func content(
     for snapshot: WidgetSnapshot?,
     today: String,
@@ -34,27 +34,29 @@ enum WidgetAgenda {
     guard
       snapshot.version <= WidgetSnapshot.supportedVersion,
       let coversUntil = snapshot.coversUntil,
-      today <= coversUntil
+      today <= coversUntil,
+      let pendingCount = strings.pendingCount,
+      let overdueCount = strings.overdueCount
     else { return .message(header: strings.header, text: strings.stale) }
 
     // ISO days compare in calendar order.
-    let rows = snapshot.tasks
-      .filter { $0.dueDate <= today }
-      .prefix(max(capacity, 0))
-      .map { task -> WidgetRow in
-        let isOverdue = task.dueDate < today
-        return WidgetRow(
-          id: task.id,
-          title: task.title,
-          isOverdue: isOverdue,
-          accessibilityLabel: isOverdue
-            ? "\(strings.overdue): \(task.title)" : task.title
-        )
-      }
-    guard !rows.isEmpty else {
+    let todays = snapshot.tasks.filter { $0.dueDate == today }
+    let overdue = snapshot.tasks.filter { $0.dueDate < today }.count
+    guard !todays.isEmpty || overdue > 0 else {
       return .message(header: strings.header, text: strings.empty)
     }
-    return .tasks(header: strings.header, rows: Array(rows))
+
+    // The overdue group always takes a row. When today's tasks do not all
+    // fit, one more row goes to the group of the oldest ones.
+    let free = max(capacity - (overdue > 0 ? 1 : 0), 0)
+    let shown = todays.count <= free ? todays.count : max(free - 1, 0)
+    let pending = todays.count - shown
+    return .tasks(
+      header: strings.header,
+      overdue: overdue > 0 ? overdueCount.format(overdue) : nil,
+      pending: pending > 0 ? pendingCount.format(pending) : nil,
+      rows: todays.prefix(shown).map { WidgetRow(id: $0.id, title: $0.title) }
+    )
   }
 
   static func isoDay(of date: Date, calendar: Calendar) -> String {

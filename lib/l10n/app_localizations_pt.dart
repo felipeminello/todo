@@ -214,4 +214,20 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get widgetSignedOut => 'Entre no app para ver suas tarefas';
+
+  @override
+  String get widgetPendingOne => '1 tarefa pendente';
+
+  @override
+  String widgetPendingOther(String count) {
+    return '$count tarefas pendentes';
+  }
+
+  @override
+  String get widgetOverdueOne => '1 tarefa atrasada';
+
+  @override
+  String widgetOverdueOther(String count) {
+    return '$count tarefas atrasadas';
+  }
 }

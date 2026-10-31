@@ -8,7 +8,7 @@ import 'package:todo/features/tasks/domain/entities/widget_task_snapshot.dart';
 final class WidgetSnapshotCodec {
   const WidgetSnapshotCodec(this._strings);
 
-  static const version = 1;
+  static const version = 2;
 
   final WidgetStrings _strings;
 

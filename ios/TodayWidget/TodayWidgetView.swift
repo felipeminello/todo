@@ -41,11 +41,23 @@ struct TodayWidgetView: View {
             .font(.subheadline)
             .foregroundColor(.secondary)
         }
-      case .tasks(let header, let rows):
+      case .tasks(let header, let overdue, let pending, let rows):
         TodayLayout(header: header) {
-          // Most recent at the bottom.
+          // Oldest at the top, most recent at the bottom.
+          if let overdue {
+            OverdueGroupView(text: overdue)
+          }
+          if let pending {
+            Text(pending)
+              .font(.subheadline)
+              .foregroundColor(.secondary)
+              .lineLimit(1)
+          }
           ForEach(rows.reversed(), id: \.id) { row in
-            TaskRowView(row: row)
+            Text(row.title)
+              .font(.subheadline)
+              .lineLimit(1)
+              .truncationMode(.tail)
           }
         }
       }
@@ -71,23 +83,19 @@ private struct TodayLayout<Content: View>: View {
   }
 }
 
-private struct TaskRowView: View {
-  let row: WidgetRow
+private struct OverdueGroupView: View {
+  let text: String
 
   var body: some View {
     HStack(spacing: 4) {
-      if row.isOverdue {
-        Image(systemName: "exclamationmark.circle")
-          .font(.caption)
-      }
-      Text(row.title)
+      Image(systemName: "exclamationmark.circle")
+        .font(.caption)
+        .accessibilityHidden(true)
+      Text(text)
         .font(.subheadline)
         .lineLimit(1)
-        .truncationMode(.tail)
     }
-    .foregroundColor(row.isOverdue ? Color("OverdueColor") : .primary)
-    .accessibilityElement(children: .ignore)
-    .accessibilityLabel(row.accessibilityLabel)
+    .foregroundColor(Color("OverdueColor"))
   }
 }
 

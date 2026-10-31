@@ -134,8 +134,10 @@ private fun TodayContent(content: WidgetContent) {
           Header(content.header)
           // Anchors the list to the bottom edge.
           Spacer(GlanceModifier.defaultWeight())
-          // Most recent at the bottom.
-          content.rows.asReversed().forEach { TaskRow(it) }
+          // Oldest at the top, most recent at the bottom.
+          content.overdue?.let { OverdueGroup(it) }
+          content.pending?.let { Line(it, onBackgroundVariant) }
+          content.rows.asReversed().forEach { Line(it.title, onBackground) }
         }
   }
 }
@@ -150,24 +152,28 @@ private fun Header(text: String) {
 }
 
 @Composable
-private fun TaskRow(row: WidgetRow) {
-  val color = if (row.isOverdue) overdue else onBackground
+private fun OverdueGroup(text: String) {
   Row(
-      modifier =
-          GlanceModifier.fillMaxWidth().height(22.dp).semantics {
-            contentDescription = row.accessibilityLabel
-          },
+      modifier = GlanceModifier.fillMaxWidth().height(22.dp),
       verticalAlignment = Alignment.CenterVertically,
   ) {
-    if (row.isOverdue) {
-      Image(
-          provider = ImageProvider(R.drawable.ic_widget_overdue),
-          contentDescription = null,
-          colorFilter = ColorFilter.tint(overdue),
-          modifier = GlanceModifier.size(14.dp),
-      )
-      Spacer(GlanceModifier.width(4.dp))
-    }
-    Text(text = row.title, maxLines = 1, style = TextStyle(color = color, fontSize = 14.sp))
+    Image(
+        provider = ImageProvider(R.drawable.ic_widget_overdue),
+        contentDescription = null,
+        colorFilter = ColorFilter.tint(overdue),
+        modifier = GlanceModifier.size(14.dp),
+    )
+    Spacer(GlanceModifier.width(4.dp))
+    Text(text = text, maxLines = 1, style = TextStyle(color = overdue, fontSize = 14.sp))
+  }
+}
+
+@Composable
+private fun Line(text: String, color: ColorProvider) {
+  Row(
+      modifier = GlanceModifier.fillMaxWidth().height(22.dp),
+      verticalAlignment = Alignment.CenterVertically,
+  ) {
+    Text(text = text, maxLines = 1, style = TextStyle(color = color, fontSize = 14.sp))
   }
 }

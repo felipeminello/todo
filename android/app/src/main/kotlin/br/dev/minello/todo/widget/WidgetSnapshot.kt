@@ -23,16 +23,29 @@ data class WidgetSnapshot(
       val dueDate: String,
   )
 
+  /** A text whose count only the widget knows. */
+  data class CountText(val one: String, val other: String) {
+    fun format(count: Int): String =
+        if (count == 1) one else other.replace(COUNT_TOKEN, count.toString())
+
+    companion object {
+      /** Must match `WidgetCountText.countToken` in Dart. */
+      const val COUNT_TOKEN = "{count}"
+    }
+  }
+
   data class Strings(
       val header: String,
       val empty: String,
       val stale: String,
       val signedOut: String,
-      val overdue: String,
+      /** `null` in snapshots older than version 2, which then read as stale. */
+      val pendingCount: CountText?,
+      val overdueCount: CountText?,
   )
 
   companion object {
-    const val SUPPORTED_VERSION = 1
+    const val SUPPORTED_VERSION = 2
 
     /** Must match `HomeWidgetTaskPublisher.snapshotKey` in Dart. */
     const val STORAGE_KEY = "today_widget_snapshot"
@@ -63,12 +76,16 @@ data class WidgetSnapshot(
                     empty = strings.getString("empty"),
                     stale = strings.getString("stale"),
                     signedOut = strings.getString("signedOut"),
-                    overdue = strings.getString("overdue"),
+                    pendingCount = strings.optJSONObject("pendingCount")?.let(::parseCountText),
+                    overdueCount = strings.optJSONObject("overdueCount")?.let(::parseCountText),
                 ),
         )
       } catch (_: JSONException) {
         null
       }
     }
+
+    private fun parseCountText(json: JSONObject) =
+        CountText(one = json.getString("one"), other = json.getString("other"))
   }
 }

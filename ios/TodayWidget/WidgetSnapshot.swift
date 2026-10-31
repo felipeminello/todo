@@ -3,7 +3,7 @@ import Foundation
 /// The JSON the Flutter app writes (`WidgetSnapshotCodec` in Dart). Both
 /// sides must change together with `supportedVersion`.
 struct WidgetSnapshot: Decodable, Equatable {
-  static let supportedVersion = 1
+  static let supportedVersion = 2
   static let appGroupId = "group.br.dev.minello.todo"
   static let storageKey = "today_widget_snapshot"
 
@@ -14,12 +14,28 @@ struct WidgetSnapshot: Decodable, Equatable {
     let dueDate: String
   }
 
+  /// A text whose count only the widget knows.
+  struct CountText: Decodable, Equatable {
+    /// Must match `WidgetCountText.countToken` in Dart.
+    static let countToken = "{count}"
+
+    let one: String
+    let other: String
+
+    func format(_ count: Int) -> String {
+      count == 1 ? one : other.replacingOccurrences(of: Self.countToken, with: String(count))
+    }
+  }
+
   struct Strings: Decodable, Equatable {
     let header: String
     let empty: String
     let stale: String
     let signedOut: String
-    let overdue: String
+    /// Absent in snapshots older than version 2, which then read as stale
+    /// instead of failing to decode.
+    let pendingCount: CountText?
+    let overdueCount: CountText?
   }
 
   let version: Int

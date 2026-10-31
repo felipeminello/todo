@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:todo/core/time/calendar_date.dart';
 import 'package:todo/features/tasks/data/widget/home_widget_task_publisher.dart';
 import 'package:todo/features/tasks/data/widget/noop_task_widget_publisher.dart';
+import 'package:todo/features/tasks/data/widget/widget_count_text.dart';
 import 'package:todo/features/tasks/data/widget/widget_snapshot_codec.dart';
 import 'package:todo/features/tasks/data/widget/widget_storage.dart';
 import 'package:todo/features/tasks/data/widget/widget_strings.dart';
@@ -34,7 +35,14 @@ void main() {
       empty: 'Nada para hoje',
       stale: 'Abra o app para atualizar',
       signedOut: 'Entre no app para ver suas tarefas',
-      overdue: 'Atrasada',
+      pendingCount: WidgetCountText(
+        one: '1 tarefa pendente',
+        other: '{count} tarefas pendentes',
+      ),
+      overdueCount: WidgetCountText(
+        one: '1 tarefa atrasada',
+        other: '{count} tarefas atrasadas',
+      ),
     ),
   );
   final snapshot = WidgetTaskSnapshot(
