@@ -32,6 +32,7 @@ flutter test                    # todos os testes
 flutter test test/caminho/x_test.dart   # um arquivo
 flutter test --coverage         # cobertura
 dart run build_runner build --delete-conflicting-outputs   # só se houver geração de código
+dart run tool/seed_tasks/seed.dart --list   # massa de dados de teste (ver tool/seed_tasks/README.md)
 ```
 
 Builds para iOS e macOS só funcionam em um Mac.
