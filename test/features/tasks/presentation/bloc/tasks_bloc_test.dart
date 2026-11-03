@@ -468,6 +468,81 @@ void main() {
         failureOf(TaskFailureReason.network, 2),
       ),
     );
+
+    group('deleting the completed ones', () {
+      final done1 = buildTask('d1', completedMinute: 1);
+      final done2 = buildTask('d2', completedMinute: 2);
+
+      blocTest<TasksBloc, TasksState>(
+        'hides them all at once and deletes each one',
+        setUp: () =>
+            when(() => repository.delete(any()))
+                .thenAnswer((_) => server.future),
+        build: build,
+        seed: () => loaded([pending, done1, done2]),
+        act: (bloc) async {
+          bloc.add(CompletedTasksDeleted([done2, done1]));
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.state.tasks, [pending]);
+          server.complete();
+        },
+        expect: () => [
+          loaded([pending]),
+        ],
+        verify: (_) {
+          verifyInOrder([
+            () => repository.delete('d2'),
+            () => repository.delete('d1'),
+          ]);
+          verifyNever(() => repository.getAll());
+          verify(() => widgetPublisher.publish(any())).called(1);
+        },
+      );
+
+      blocTest<TasksBloc, TasksState>(
+        'puts back only the ones that failed and reports once',
+        setUp: () {
+          when(() => repository.delete('d1'))
+              .thenAnswer((_) => fail(TaskFailureReason.network));
+          when(() => repository.delete('d2'))
+              .thenAnswer((_) => fail(TaskFailureReason.network));
+          when(() => repository.delete('o')).thenAnswer((_) async {});
+        },
+        build: build,
+        seed: () => loaded([pending, done1, done2, overdue]),
+        act: (bloc) => bloc.add(CompletedTasksDeleted([done2, done1, overdue])),
+        expect: () => [
+          loaded([pending]),
+          loaded([
+            pending,
+            done2,
+            done1,
+          ], failure: failureOf(TaskFailureReason.network)),
+        ],
+      );
+
+      blocTest<TasksBloc, TasksState>(
+        'one already deleted elsewhere is not an error',
+        setUp: () =>
+            when(() => repository.delete('d1'))
+                .thenAnswer((_) => fail(TaskFailureReason.notFound)),
+        build: build,
+        seed: () => loaded([pending, done1, done2]),
+        act: (bloc) => bloc.add(CompletedTasksDeleted([done1, done2])),
+        expect: () => [
+          loaded([pending]),
+        ],
+      );
+
+      blocTest<TasksBloc, TasksState>(
+        'an empty list changes nothing',
+        build: build,
+        seed: () => loaded([pending]),
+        act: (bloc) => bloc.add(const CompletedTasksDeleted([])),
+        expect: () => <TasksState>[],
+        verify: (_) => verifyNever(() => repository.delete(any())),
+      );
+    });
   });
 
   group('home screen widget', () {

@@ -54,6 +54,9 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
         store: () => _deleteTask(event.task.id),
       ),
     );
+    on<CompletedTasksDeleted>(
+      (event, emit) => _deleteAllNow(emit, event.tasks),
+    );
     on<TaskCompletionToggled>((event, emit) {
       final toggled = _toggleTask.toggled(event.task);
       return _changeNow(
@@ -174,6 +177,48 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
     }
   }
 
+  /// Hides [tasks] at once and deletes each one in the background, the way
+  /// [_changeNow] does for one, but reports a failure only once. Only the
+  /// tasks whose deletion failed come back; one the server no longer has is
+  /// already gone, which is what was asked.
+  Future<void> _deleteAllNow(Emitter<TasksState> emit, List<Task> tasks) async {
+    if (tasks.isEmpty) return;
+    final ids = {for (final task in tasks) task.id};
+    _show(emit, _removedAll(state.tasks, ids), state);
+
+    final reasons = await Future.wait([
+      for (final task in tasks)
+        _inOrder(() => _deleteTask(task.id)).then<TaskFailureReason?>(
+          (_) => null,
+          onError: (Object error) => _reasonOf(error),
+        ),
+    ]);
+
+    final failed = [
+      for (final (index, task) in tasks.indexed)
+        if (reasons[index] case final reason?
+            when reason != TaskFailureReason.notFound)
+          (task, reason),
+    ];
+    final failedIds = {for (final (task, _) in failed) task.id};
+    // A reload queued before the deletions may have shown them again.
+    var shown = _removedAll(state.tasks, ids.difference(failedIds));
+    for (final (task, _) in failed) {
+      // A reload may already have brought it back, as the server has it.
+      if (!shown.any((current) => current.id == task.id)) {
+        shown = [...shown, task];
+      }
+    }
+    _show(
+      emit,
+      shown,
+      failed.isEmpty
+          ? state
+          : state.copyWith(actionFailure: _nextFailure(failed.first.$2)),
+    );
+    if (failed.length < tasks.length) await _publishToWidget(state.tasks);
+  }
+
   /// Runs [call] after every server call queued before it.
   Future<T> _inOrder<T>(Future<T> Function() call) {
     final result = _serverQueue.then((_) => call());
@@ -210,6 +255,11 @@ final class TasksBloc extends Bloc<TasksEvent, TasksState> {
   static List<Task> _removed(List<Task> tasks, String id) => [
     for (final task in tasks)
       if (task.id != id) task,
+  ];
+
+  static List<Task> _removedAll(List<Task> tasks, Set<String> ids) => [
+    for (final task in tasks)
+      if (!ids.contains(task.id)) task,
   ];
 
   /// Only replaces a task still on screen, so a change confirmed late never

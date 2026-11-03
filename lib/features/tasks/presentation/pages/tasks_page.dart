@@ -128,6 +128,16 @@ class _TasksPageState extends State<TasksPage> {
     if (_editing?.id == task.id) _openPanel();
   }
 
+  Future<void> _deleteCompleted(List<Task> tasks) async {
+    final confirmed = await DeleteTaskSheet.confirmCompleted(
+      context,
+      count: tasks.length,
+    );
+    if (!confirmed || !mounted) return;
+    _bloc.add(CompletedTasksDeleted(tasks));
+    if (tasks.any((task) => task.id == _editing?.id)) _openPanel();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -202,6 +212,7 @@ class _TasksPageState extends State<TasksPage> {
                                   _bloc.add(TaskCompletionToggled(task)),
                               onEdit: _edit,
                               onDelete: _delete,
+                              onDeleteCompleted: _deleteCompleted,
                             ),
                     ),
                   };

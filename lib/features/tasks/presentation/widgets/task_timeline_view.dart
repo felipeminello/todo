@@ -18,6 +18,7 @@ class TaskTimelineView extends StatelessWidget {
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
+    required this.onDeleteCompleted,
     this.selectedTaskId,
     this.horizontalPadding = 20,
   });
@@ -28,6 +29,7 @@ class TaskTimelineView extends StatelessWidget {
   final ValueChanged<Task> onToggle;
   final ValueChanged<Task> onEdit;
   final ValueChanged<Task> onDelete;
+  final ValueChanged<List<Task>> onDeleteCompleted;
 
   /// The task open in the editor beside the list, if any.
   final String? selectedTaskId;
@@ -72,6 +74,7 @@ class TaskTimelineView extends StatelessWidget {
         CompletedSection(
           key: const PageStorageKey('completed-tasks'),
           tiles: [for (final task in timeline.completed) tile(task)],
+          onDeleteAll: () => onDeleteCompleted(timeline.completed),
         ),
     ];
 

@@ -39,6 +39,16 @@ final class TaskDeleted extends TasksEvent {
   List<Object?> get props => [task];
 }
 
+/// The user confirmed deleting every task in [tasks] at once.
+final class CompletedTasksDeleted extends TasksEvent {
+  const CompletedTasksDeleted(this.tasks);
+
+  final List<Task> tasks;
+
+  @override
+  List<Object?> get props => [tasks];
+}
+
 final class TaskCompletionToggled extends TasksEvent {
   const TaskCompletionToggled(this.task);
 

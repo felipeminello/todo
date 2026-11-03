@@ -151,6 +151,23 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get completedDeleteTooltip => 'Excluir concluídas';
+
+  @override
+  String get completedDeleteDialogTitle => 'Excluir tarefas concluídas?';
+
+  @override
+  String completedDeleteDialogMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'As $count tarefas concluídas serão excluídas permanentemente.',
+      one: 'A tarefa concluída será excluída permanentemente.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get cancelAction => 'Cancelar';
 
   @override

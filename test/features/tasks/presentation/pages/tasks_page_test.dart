@@ -274,6 +274,39 @@ void main() {
     expect(await dataSource.getAll(), isEmpty);
   });
 
+  testWidgets('deleting the completed ones asks for confirmation', (
+    tester,
+  ) async {
+    await seed([
+      buildTask('1', title: 'Pendente'),
+      buildTask('2', title: 'Feita 1', completedMinute: 1),
+      buildTask('3', title: 'Feita 2', completedMinute: 2),
+    ]);
+    await pump(tester);
+
+    await tester.tap(find.byTooltip('Excluir concluídas'));
+    await tester.pumpAndSettle();
+    expect(find.text('Excluir tarefas concluídas?'), findsOneWidget);
+    expect(
+      find.text('As 2 tarefas concluídas serão excluídas permanentemente.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Concluídas (2)'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Excluir concluídas'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Concluídas'), findsNothing);
+    expect(find.byTooltip('Excluir concluídas'), findsNothing);
+    expect(find.text('Pendente'), findsOneWidget);
+    expect((await dataSource.getAll()).single.title, 'Pendente');
+  });
+
   testWidgets('a failed first load offers a retry', (tester) async {
     dataSource.failNext = const RemoteException(RemoteErrorKind.network);
     await pump(tester);

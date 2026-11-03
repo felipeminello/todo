@@ -184,6 +184,23 @@
       }
     }
   },
+  "completedDeleteTooltip": "Excluir concluídas",
+  "@completedDeleteTooltip": {
+    "description": "Dica do botão que exclui todas as tarefas concluídas"
+  },
+  "completedDeleteDialogTitle": "Excluir tarefas concluídas?",
+  "@completedDeleteDialogTitle": {
+    "description": "Título da confirmação de exclusão das concluídas"
+  },
+  "completedDeleteDialogMessage": "{count, plural, =1{A tarefa concluída será excluída permanentemente.} other{As {count} tarefas concluídas serão excluídas permanentemente.}}",
+  "@completedDeleteDialogMessage": {
+    "description": "Mensagem da confirmação de exclusão das concluídas",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "cancelAction": "Cancelar",
   "@cancelAction": {
     "description": "Ação de cancelar"

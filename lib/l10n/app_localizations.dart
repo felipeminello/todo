@@ -328,6 +328,24 @@ abstract class AppLocalizations {
   /// **'\"{title}\" será excluída permanentemente.'**
   String taskDeleteDialogMessage(String title);
 
+  /// Dica do botão que exclui todas as tarefas concluídas
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluir concluídas'**
+  String get completedDeleteTooltip;
+
+  /// Título da confirmação de exclusão das concluídas
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluir tarefas concluídas?'**
+  String get completedDeleteDialogTitle;
+
+  /// Mensagem da confirmação de exclusão das concluídas
+  ///
+  /// In pt, this message translates to:
+  /// **'{count, plural, =1{A tarefa concluída será excluída permanentemente.} other{As {count} tarefas concluídas serão excluídas permanentemente.}}'**
+  String completedDeleteDialogMessage(int count);
+
   /// Ação de cancelar
   ///
   /// In pt, this message translates to:

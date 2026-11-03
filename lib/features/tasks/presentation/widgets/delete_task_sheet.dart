@@ -2,22 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:todo/core/ui/widgets/brand_button.dart';
 import 'package:todo/l10n/app_localizations.dart';
 
-/// Asks before a task is deleted for good.
+/// Asks before tasks are deleted for good.
 class DeleteTaskSheet extends StatelessWidget {
-  const DeleteTaskSheet({super.key, required this.title});
+  const DeleteTaskSheet({
+    super.key,
+    required this.heading,
+    required this.message,
+  });
 
-  /// The title of the task to delete.
-  final String title;
+  final String heading;
 
-  /// Completes with `true` only when the deletion is confirmed.
-  static Future<bool> confirm(
+  /// Says what will be deleted.
+  final String message;
+
+  /// Asks about the task titled [title]. Completes with `true` only when the
+  /// deletion is confirmed.
+  static Future<bool> confirm(BuildContext context, {required String title}) {
+    final l10n = AppLocalizations.of(context);
+    return _ask(
+      context,
+      DeleteTaskSheet(
+        heading: l10n.taskDeleteDialogTitle,
+        message: l10n.taskDeleteDialogMessage(title),
+      ),
+    );
+  }
+
+  /// Asks about all [count] completed tasks. Completes with `true` only when
+  /// the deletion is confirmed.
+  static Future<bool> confirmCompleted(
     BuildContext context, {
-    required String title,
-  }) async {
+    required int count,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    return _ask(
+      context,
+      DeleteTaskSheet(
+        heading: l10n.completedDeleteDialogTitle,
+        message: l10n.completedDeleteDialogMessage(count),
+      ),
+    );
+  }
+
+  static Future<bool> _ask(BuildContext context, DeleteTaskSheet sheet) async {
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       useSafeArea: true,
-      builder: (_) => DeleteTaskSheet(title: title),
+      builder: (_) => sheet,
     );
     return confirmed ?? false;
   }
@@ -51,14 +82,11 @@ class DeleteTaskSheet extends StatelessWidget {
           const SizedBox(height: 18),
           Semantics(
             header: true,
-            child: Text(
-              l10n.taskDeleteDialogTitle,
-              style: theme.textTheme.titleLarge,
-            ),
+            child: Text(heading, style: theme.textTheme.titleLarge),
           ),
           const SizedBox(height: 8),
           Text(
-            l10n.taskDeleteDialogMessage(title),
+            message,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
