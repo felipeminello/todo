@@ -1,0 +1,171 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  # Rodar à mão gera os builds (para conferir os secrets) sem criar release.
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: "3.47.7"
+  # PRODUCT_NAME de macos/Runner/Configs/AppInfo.xcconfig.
+  APP_NAME: "todo"
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get
+      # O target usa assinatura automática com "Apple Development" (o
+      # keychain-access-groups do firebase_auth exige certificado), que não
+      # existe no runner. O Flutter só prepara o projeto, o Xcode compila sem
+      # assinar e a assinatura com o Developer ID é feita depois, à mão.
+      - name: Build unsigned app
+        run: |
+          flutter build macos --release --config-only
+          xcodebuild -quiet -workspace macos/Runner.xcworkspace -scheme Runner \
+            -configuration Release -destination 'generic/platform=macOS' \
+            -derivedDataPath build/macos \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY= build
+      - name: Import Developer ID certificate
+        env:
+          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password=$(openssl rand -base64 24)
+          printf '%s' "$MACOS_CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$keychain"
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          identity=$(security find-identity -v -p codesigning "$keychain" |
+            awk '/Developer ID Application/ { print $2; exit }')
+          [ -n "$identity" ] || { echo "::error::Developer ID Application não encontrado no .p12"; exit 1; }
+          echo "SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
+      # keychain-access-groups é um entitlement restrito: fora da App Store, o
+      # macOS só deixa o app abrir se ele trouxer um provisioning profile
+      # Developer ID que o autorize.
+      - name: Install provisioning profile
+        env:
+          MACOS_PROVISIONING_PROFILE: ${{ secrets.MACOS_PROVISIONING_PROFILE }}
+        run: |
+          app="build/macos/Build/Products/Release/$APP_NAME.app"
+          profile="$RUNNER_TEMP/profile.provisionprofile"
+          printf '%s' "$MACOS_PROVISIONING_PROFILE" | base64 --decode > "$profile"
+          security cms -D -i "$profile" > "$RUNNER_TEMP/profile.plist"
+          team_id=$(/usr/libexec/PlistBuddy -c 'Print TeamIdentifier:0' "$RUNNER_TEMP/profile.plist")
+          profile_app_id=$(/usr/libexec/PlistBuddy -c 'Print Entitlements:com.apple.application-identifier' "$RUNNER_TEMP/profile.plist")
+          bundle_id=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Contents/Info.plist")
+          [ "$profile_app_id" = "$team_id.$bundle_id" ] ||
+            { echo "::error::O profile é de $profile_app_id, não de $team_id.$bundle_id"; exit 1; }
+          cp "$profile" "$app/Contents/embedded.provisionprofile"
+          # O build sem assinatura não expande as variáveis do .entitlements, e
+          # o profile só vale com o application-identifier e o team-identifier
+          # que o Xcode acrescentaria.
+          entitlements="$RUNNER_TEMP/Release.entitlements"
+          sed -e "s/\$(AppIdentifierPrefix)/$team_id./g" -e "s/\$(PRODUCT_BUNDLE_IDENTIFIER)/$bundle_id/g" \
+            macos/Runner/Release.entitlements > "$entitlements"
+          /usr/libexec/PlistBuddy -c "Add :com.apple.application-identifier string $team_id.$bundle_id" \
+            -c "Add :com.apple.developer.team-identifier string $team_id" "$entitlements"
+          echo "ENTITLEMENTS=$entitlements" >> "$GITHUB_ENV"
+      - name: Sign app bundle
+        run: |
+          app="build/macos/Build/Products/Release/$APP_NAME.app"
+          # De dentro para fora: frameworks e dylibs antes do app.
+          find "$app/Contents/Frameworks" -depth \( -name '*.framework' -o -name '*.dylib' \) -print0 |
+            while IFS= read -r -d '' item; do
+              codesign --force --timestamp --options runtime --sign "$SIGNING_IDENTITY" "$item"
+            done
+          codesign --force --timestamp --options runtime \
+            --entitlements "$ENTITLEMENTS" --sign "$SIGNING_IDENTITY" "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+      - name: Notarize app bundle
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          app="build/macos/Build/Products/Release/$APP_NAME.app"
+          key="$RUNNER_TEMP/AuthKey.p8"
+          printf '%s\n' "$APPLE_API_KEY_P8" > "$key"
+          auth=(--key "$key" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID")
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" "${auth[@]}" \
+            --wait --timeout 30m --output-format json > "$RUNNER_TEMP/notarize.json" || true
+          cat "$RUNNER_TEMP/notarize.json"
+          status=$(jq -r '.status // empty' "$RUNNER_TEMP/notarize.json")
+          if [ "$status" != Accepted ]; then
+            id=$(jq -r '.id // empty' "$RUNNER_TEMP/notarize.json")
+            [ -z "$id" ] || xcrun notarytool log "$id" "${auth[@]}"
+            echo "::error::Notarização terminou com status '${status:-desconhecido}'"
+            exit 1
+          fi
+          xcrun stapler staple "$app"
+          xcrun stapler validate "$app"
+          spctl --assess --type execute --verbose=2 "$app"
+      - name: Remove signing keychain
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/profile.provisionprofile"
+      - name: Zip app bundle
+        run: |
+          cd "build/macos/Build/Products/Release"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_NAME.app" todo-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: build/macos/Build/Products/Release/todo-macos.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build windows --release
+      # Sem o runtime do Visual C++ ao lado do .exe, o app não abre em máquinas
+      # que não têm o VC++ Redistributable instalado.
+      - name: Bundle Visual C++ runtime
+        run: |
+          foreach ($dll in 'msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
+            Copy-Item "$env:SystemRoot\System32\$dll" build/windows/x64/runner/Release/
+          }
+      - name: Zip build output
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath todo-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: todo-windows.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/macos-build/todo-macos.zip
+            artifacts/windows-build/todo-windows.zip
