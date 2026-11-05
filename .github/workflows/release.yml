@@ -10,7 +10,7 @@ on:
 env:
   FLUTTER_VERSION: "3.47.7"
   # PRODUCT_NAME de macos/Runner/Configs/AppInfo.xcconfig.
-  APP_NAME: "todo"
+  APP_NAME: "ToDo Bomber"
 
 jobs:
   build-macos:
@@ -99,7 +99,19 @@ jobs:
           app="build/macos/Build/Products/Release/$APP_NAME.app"
           key="$RUNNER_TEMP/AuthKey.p8"
           printf '%s\n' "$APPLE_API_KEY_P8" > "$key"
-          auth=(--key "$key" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID")
+          # Secrets colados na UI do GitHub costumam trazer espaço ou quebra de linha.
+          key_id=$(printf '%s' "$APPLE_API_KEY_ID" | tr -d '[:space:]')
+          issuer=$(printf '%s' "$APPLE_API_ISSUER_ID" | tr -d '[:space:]')
+          uuid_re='^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$'
+          if [[ ! "$issuer" =~ $uuid_re ]]; then
+            echo "::error::APPLE_API_ISSUER_ID não é um UUID (${#issuer} caracteres). Use o Issuer ID de App Store Connect > Users and Access > Integrations > App Store Connect API."
+            exit 1
+          fi
+          if [[ ! "$key_id" =~ ^[A-Z0-9]{10}$ ]]; then
+            echo "::error::APPLE_API_KEY_ID deve ter 10 caracteres alfanuméricos (${#key_id} recebidos)."
+            exit 1
+          fi
+          auth=(--key "$key" --key-id "$key_id" --issuer "$issuer")
           ditto -c -k --keepParent "$app" "$RUNNER_TEMP/notarize.zip"
           xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" "${auth[@]}" \
             --wait --timeout 30m --output-format json > "$RUNNER_TEMP/notarize.json" || true

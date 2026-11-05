@@ -97,7 +97,7 @@ abstract class AppLocalizations {
   /// Título do aplicativo
   ///
   /// In pt, this message translates to:
-  /// **'Minhas Tarefas'**
+  /// **'ToDo Bomber'**
   String get appTitle;
 
   /// Rótulo de acessibilidade do indicador de carregamento

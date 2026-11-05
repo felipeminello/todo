@@ -10,7 +10,7 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
-  String get appTitle => 'Minhas Tarefas';
+  String get appTitle => 'ToDo Bomber';
 
   @override
   String get loadingLabel => 'Carregando';

@@ -1,6 +1,6 @@
 {
   "@@locale": "pt",
-  "appTitle": "Minhas Tarefas",
+  "appTitle": "ToDo Bomber",
   "@appTitle": {
     "description": "Título do aplicativo"
   },
