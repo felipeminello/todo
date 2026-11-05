@@ -8,6 +8,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:todo/app/home_widget_strings.dart';
+import 'package:todo/core/links/link_opener.dart';
+import 'package:todo/core/links/url_launcher_link_opener.dart';
 import 'package:todo/core/time/clock.dart';
 import 'package:todo/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:todo/features/auth/data/datasources/firebase_auth_data_source.dart';
@@ -67,7 +69,9 @@ void configureDependencies(
   http.Client Function()? httpClient,
   FlutterSecureStorage Function()? secureStorage,
 }) {
-  sl.registerLazySingleton<Clock>(() => const SystemClock());
+  sl
+    ..registerLazySingleton<Clock>(() => const SystemClock())
+    ..registerLazySingleton<LinkOpener>(() => const UrlLauncherLinkOpener());
 
   if (usesFirebaseRest(platform)) {
     sl

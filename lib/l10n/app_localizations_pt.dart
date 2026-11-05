@@ -221,6 +221,26 @@ class AppLocalizationsPt extends AppLocalizations {
   String get taskFormSave => 'Salvar';
 
   @override
+  String get taskDetailsEdit => 'Editar';
+
+  @override
+  String get taskDetailsClose => 'Fechar';
+
+  @override
+  String get taskDetailsBack => 'Voltar';
+
+  @override
+  String get taskDetailsNoDescription => 'Sem descrição';
+
+  @override
+  String get taskDetailsCompleted => 'Concluída';
+
+  @override
+  String taskDetailsDueDateSemantics(String date) {
+    return 'Data: $date';
+  }
+
+  @override
   String get widgetHeader => 'Hoje';
 
   @override

@@ -9,7 +9,7 @@ class TaskTile extends StatelessWidget {
     super.key,
     required this.task,
     required this.onToggle,
-    required this.onEdit,
+    required this.onOpen,
     required this.onDelete,
     this.isOverdue = false,
     this.isSelected = false,
@@ -17,7 +17,9 @@ class TaskTile extends StatelessWidget {
 
   final Task task;
   final VoidCallback onToggle;
-  final VoidCallback onEdit;
+
+  /// Shows the task's details.
+  final VoidCallback onOpen;
   final VoidCallback onDelete;
 
   /// Outlines the box in the overdue color, echoing the day it belongs to.
@@ -36,7 +38,7 @@ class TaskTile extends StatelessWidget {
     final radius = BorderRadius.circular(16);
 
     final row = InkWell(
-      onTap: onEdit,
+      onTap: onOpen,
       borderRadius: radius,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 58),

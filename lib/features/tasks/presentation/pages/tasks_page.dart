@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:todo/core/error/failure.dart';
+import 'package:todo/core/links/link_opener.dart';
 import 'package:todo/core/ui/widgets/brand_background.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
 import 'package:todo/features/tasks/domain/usecases/add_task.dart';
@@ -9,6 +10,8 @@ import 'package:todo/features/tasks/domain/usecases/update_task.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:todo/features/tasks/presentation/widgets/add_task_button.dart';
 import 'package:todo/features/tasks/presentation/widgets/delete_task_sheet.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_details_sheet.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_details_view.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_editor_panel.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_failure_message.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_form.dart';
@@ -24,8 +27,8 @@ import 'package:todo/l10n/app_localizations.dart';
 class TasksPage extends StatefulWidget {
   const TasksPage({super.key, this.onSignOut});
 
-  /// Windows at least this wide edit tasks in a panel beside the list
-  /// instead of a bottom sheet.
+  /// Windows at least this wide show a task's details in place of the list
+  /// and edit tasks in a panel beside it, instead of in bottom sheets.
   static const twoPaneBreakpoint = 960.0;
 
   final VoidCallback? onSignOut;
@@ -42,6 +45,9 @@ class _TasksPageState extends State<TasksPage> {
 
   /// The task open in the side panel; without one the panel creates.
   Task? _editing;
+
+  /// The task whose details replace the list in wide windows.
+  String? _viewingId;
 
   /// Bumped to give the side panel a fresh form.
   int _panelGeneration = 0;
@@ -88,12 +94,30 @@ class _TasksPageState extends State<TasksPage> {
     _save(result);
   }
 
+  Future<void> _view(Task task) async {
+    if (_isWide) {
+      // A form left editing another task would no longer match the details.
+      if (_editing != null && _editing?.id != task.id) _openPanel();
+      return setState(() => _viewingId = task.id);
+    }
+    final edit = await TaskDetailsSheet.open(
+      context,
+      task: task,
+      onOpenLink: _openLink,
+    );
+    if (edit && mounted) await _edit(task);
+  }
+
+  void _closeDetails() => setState(() => _viewingId = null);
+
   Future<void> _edit(Task task) async {
     if (_isWide) return _openPanel(task: task, focus: true);
     final result = await TaskFormSheet.open(context, initial: task);
     if (result == null || !mounted) return;
     _save(result, original: task);
   }
+
+  void _openLink(Uri uri) => context.read<LinkOpener>().open(uri);
 
   void _save(TaskFormResult result, {Task? original}) {
     _bloc.add(
@@ -149,6 +173,8 @@ class _TasksPageState extends State<TasksPage> {
         const SingleActivator(LogicalKeyboardKey.f5): _refresh,
         const SingleActivator(LogicalKeyboardKey.keyR, control: true): _refresh,
         const SingleActivator(LogicalKeyboardKey.keyR, meta: true): _refresh,
+        if (wide && _viewingId != null)
+          const SingleActivator(LogicalKeyboardKey.escape): _closeDetails,
       },
       child: Focus(
         autofocus: true,
@@ -210,12 +236,19 @@ class _TasksPageState extends State<TasksPage> {
                               horizontalPadding: padding,
                               onToggle: (task) =>
                                   _bloc.add(TaskCompletionToggled(task)),
-                              onEdit: _edit,
+                              onOpen: _view,
                               onDelete: _delete,
                               onDeleteCompleted: _deleteCompleted,
                             ),
                     ),
                   };
+
+                  final viewingId = _viewingId;
+                  // Gone after a refresh or deleted elsewhere: back to the
+                  // list.
+                  final viewing = loaded && viewingId != null
+                      ? state.timeline.taskById(viewingId)
+                      : null;
 
                   if (!wide) {
                     return Column(
@@ -248,7 +281,17 @@ class _TasksPageState extends State<TasksPage> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(child: content),
+                                Expanded(
+                                  child: viewing == null
+                                      ? content
+                                      : TaskDetailsView(
+                                          task: viewing,
+                                          horizontalPadding: padding,
+                                          onBack: _closeDetails,
+                                          onEdit: () => _edit(viewing),
+                                          onOpenLink: _openLink,
+                                        ),
+                                ),
                                 if (loaded)
                                   SizedBox(
                                     width: _panelWidth + padding,

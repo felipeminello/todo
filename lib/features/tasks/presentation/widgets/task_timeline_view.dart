@@ -16,7 +16,7 @@ class TaskTimelineView extends StatelessWidget {
     super.key,
     required this.timeline,
     required this.onToggle,
-    required this.onEdit,
+    required this.onOpen,
     required this.onDelete,
     required this.onDeleteCompleted,
     this.selectedTaskId,
@@ -27,7 +27,7 @@ class TaskTimelineView extends StatelessWidget {
 
   final TaskTimeline timeline;
   final ValueChanged<Task> onToggle;
-  final ValueChanged<Task> onEdit;
+  final ValueChanged<Task> onOpen;
   final ValueChanged<Task> onDelete;
   final ValueChanged<List<Task>> onDeleteCompleted;
 
@@ -45,7 +45,7 @@ class TaskTimelineView extends StatelessWidget {
       isOverdue: isOverdue,
       isSelected: task.id == selectedTaskId,
       onToggle: () => onToggle(task),
-      onEdit: () => onEdit(task),
+      onOpen: () => onOpen(task),
       onDelete: () => onDelete(task),
     );
 

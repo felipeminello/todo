@@ -269,6 +269,35 @@
   "@taskFormSave": {
     "description": "Botão que salva a tarefa"
   },
+  "taskDetailsEdit": "Editar",
+  "@taskDetailsEdit": {
+    "description": "Botão que abre a edição da tarefa exibida nos detalhes"
+  },
+  "taskDetailsClose": "Fechar",
+  "@taskDetailsClose": {
+    "description": "Botão que fecha os detalhes da tarefa e volta para a lista"
+  },
+  "taskDetailsBack": "Voltar",
+  "@taskDetailsBack": {
+    "description": "Botão que sai dos detalhes da tarefa e volta para a lista, em telas largas"
+  },
+  "taskDetailsNoDescription": "Sem descrição",
+  "@taskDetailsNoDescription": {
+    "description": "Exibido nos detalhes quando a tarefa não tem descrição"
+  },
+  "taskDetailsCompleted": "Concluída",
+  "@taskDetailsCompleted": {
+    "description": "Destaque nos detalhes de uma tarefa concluída"
+  },
+  "taskDetailsDueDateSemantics": "Data: {date}",
+  "@taskDetailsDueDateSemantics": {
+    "description": "Anúncio do leitor de tela para a data nos detalhes da tarefa",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "widgetHeader": "Hoje",
   "@widgetHeader": {
     "description": "Cabeçalho do widget de tela inicial com as tarefas do dia"

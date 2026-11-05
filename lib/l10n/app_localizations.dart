@@ -448,6 +448,42 @@ abstract class AppLocalizations {
   /// **'Salvar'**
   String get taskFormSave;
 
+  /// Botão que abre a edição da tarefa exibida nos detalhes
+  ///
+  /// In pt, this message translates to:
+  /// **'Editar'**
+  String get taskDetailsEdit;
+
+  /// Botão que fecha os detalhes da tarefa e volta para a lista
+  ///
+  /// In pt, this message translates to:
+  /// **'Fechar'**
+  String get taskDetailsClose;
+
+  /// Botão que sai dos detalhes da tarefa e volta para a lista, em telas largas
+  ///
+  /// In pt, this message translates to:
+  /// **'Voltar'**
+  String get taskDetailsBack;
+
+  /// Exibido nos detalhes quando a tarefa não tem descrição
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem descrição'**
+  String get taskDetailsNoDescription;
+
+  /// Destaque nos detalhes de uma tarefa concluída
+  ///
+  /// In pt, this message translates to:
+  /// **'Concluída'**
+  String get taskDetailsCompleted;
+
+  /// Anúncio do leitor de tela para a data nos detalhes da tarefa
+  ///
+  /// In pt, this message translates to:
+  /// **'Data: {date}'**
+  String taskDetailsDueDateSemantics(String date);
+
   /// Cabeçalho do widget de tela inicial com as tarefas do dia
   ///
   /// In pt, this message translates to:

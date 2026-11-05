@@ -47,6 +47,8 @@ dependencies:
   flutter_secure_storage: ^11.2.0
   google_fonts: ^9.0.0
   home_widget: ^0.10.0
+  url_launcher: ^6.3.3
+  flutter_markdown_plus: ^1.0.12
 
 dev_dependencies:
   flutter_test:

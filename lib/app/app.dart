@@ -5,6 +5,7 @@ import 'package:todo/app/auth_gate.dart';
 import 'package:todo/app/theme/app_theme.dart';
 import 'package:todo/app/theme/app_typography.dart';
 import 'package:todo/app/widget_sign_out_listener.dart';
+import 'package:todo/core/links/link_opener.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:todo/features/tasks/domain/usecases/clear_widget_tasks.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
@@ -16,33 +17,39 @@ class TodoApp extends StatelessWidget {
     required this.createAuthBloc,
     required this.createTasksBloc,
     required this.clearWidgetTasks,
+    required this.linkOpener,
     this.typography = const PlatformTypography(),
   });
 
   final AuthBloc Function() createAuthBloc;
   final TasksBloc Function() createTasksBloc;
   final ClearWidgetTasks clearWidgetTasks;
+  final LinkOpener linkOpener;
   final AppTypography typography;
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => createAuthBloc()..add(const AuthSessionRequested()),
-      child: MaterialApp(
-        onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-        locale: const Locale('pt', 'BR'),
-        supportedLocales: const [Locale('pt', 'BR')],
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        theme: AppTheme.light(typography),
-        darkTheme: AppTheme.dark(typography),
-        home: WidgetSignOutListener(
-          clearWidgetTasks: clearWidgetTasks,
-          child: AuthGate(createTasksBloc: createTasksBloc),
+    // Above the MaterialApp so pages and the sheets they open can reach it.
+    return RepositoryProvider<LinkOpener>.value(
+      value: linkOpener,
+      child: BlocProvider(
+        create: (_) => createAuthBloc()..add(const AuthSessionRequested()),
+        child: MaterialApp(
+          onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+          locale: const Locale('pt', 'BR'),
+          supportedLocales: const [Locale('pt', 'BR')],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          theme: AppTheme.light(typography),
+          darkTheme: AppTheme.dark(typography),
+          home: WidgetSignOutListener(
+            clearWidgetTasks: clearWidgetTasks,
+            child: AuthGate(createTasksBloc: createTasksBloc),
+          ),
         ),
       ),
     );

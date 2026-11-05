@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todo/app/theme/app_theme.dart';
 import 'package:todo/core/error/exceptions.dart';
+import 'package:todo/core/links/link_opener.dart';
 import 'package:todo/core/time/calendar_date.dart';
 import 'package:todo/features/tasks/data/models/task_model.dart';
 import 'package:todo/features/tasks/data/repositories/task_repository_impl.dart';
@@ -21,6 +22,8 @@ import 'package:todo/features/tasks/domain/usecases/update_task.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:todo/features/tasks/presentation/pages/tasks_page.dart';
 import 'package:todo/features/tasks/presentation/theme/task_status_colors.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_details_sheet.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_details_view.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_form.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_form_sheet.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_tile.dart';
@@ -28,6 +31,7 @@ import 'package:todo/features/tasks/presentation/widgets/task_tile.dart';
 import '../../../../helpers/fake_task_remote_data_source.dart';
 import '../../../../helpers/fixed_clock.dart';
 import '../../../../helpers/localized_app.dart';
+import '../../../../helpers/recording_link_opener.dart';
 import '../../../../helpers/task_factory.dart';
 
 /// Counts loads so refresh triggers can be asserted, and can hold writes to
@@ -60,6 +64,7 @@ final class _CountingDataSource extends FakeTaskRemoteDataSource {
 void main() {
   late _CountingDataSource dataSource;
   late TasksBloc bloc;
+  late RecordingLinkOpener links;
   final clock = FixedClock(DateTime(2026, 10, 27, 10));
 
   Future<void> seed(List<Task> tasks) async {
@@ -91,7 +96,10 @@ void main() {
     addTearDown(bloc.close);
     await tester.pumpWidget(
       localizedApp(
-        home: BlocProvider.value(value: bloc, child: const TasksPage()),
+        home: RepositoryProvider<LinkOpener>.value(
+          value: links,
+          child: BlocProvider.value(value: bloc, child: const TasksPage()),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -100,7 +108,10 @@ void main() {
   double topOf(WidgetTester tester, String text) =>
       tester.getTopLeft(find.text(text)).dy;
 
-  setUp(() => dataSource = _CountingDataSource());
+  setUp(() {
+    dataSource = _CountingDataSource();
+    links = RecordingLinkOpener();
+  });
 
   testWidgets('shows undated, then the timeline, then completed', (
     tester,
@@ -380,7 +391,9 @@ void main() {
     expect(dataSource.loads, 1);
   });
 
-  testWidgets('editing from a tap keeps the task position', (tester) async {
+  testWidgets('editing from the details keeps the task position', (
+    tester,
+  ) async {
     await seed([
       buildTask('1', title: 'Primeira', createdMinute: 1),
       buildTask('2', title: 'Segunda', createdMinute: 2),
@@ -389,11 +402,143 @@ void main() {
 
     await tester.tap(find.text('Primeira'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('task-details-edit')));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('task-form-title')), 'Editada');
     await tester.tap(find.byKey(const Key('task-form-save')));
     await tester.pumpAndSettle();
 
     expect(topOf(tester, 'Segunda'), lessThan(topOf(tester, 'Editada')));
+  });
+
+  group('narrow window details', () {
+    const phone = Size(390, 800);
+
+    testWidgets('tapping a task shows its details on a full-screen sheet', (
+      tester,
+    ) async {
+      await seed([
+        buildTask(
+          '1',
+          title: 'Ver',
+          description: 'Linha 1\nLinha 2',
+          dueDate: CalendarDate(2026, 10, 30),
+        ),
+      ]);
+      await pump(tester, size: phone);
+
+      await tester.tap(find.text('Ver'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskDetailsSheet), findsOneWidget);
+      expect(find.byType(TaskForm), findsNothing);
+      expect(find.byKey(const Key('task-details-title')), findsOneWidget);
+      expect(find.text('Sexta-feira, 30 de outubro de 2026'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(TaskDetailsSheet),
+          matching: find.text('Linha 1\nLinha 2'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Editar'), findsOneWidget);
+      expect(find.text('Fechar'), findsOneWidget);
+      final sheet = tester.getRect(find.byType(TaskDetailsSheet));
+      expect(sheet.height, greaterThan(phone.height * 0.8));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a task without date or description says so', (tester) async {
+      await seed([buildTask('1', title: 'Simples')]);
+      await pump(tester, size: phone);
+
+      await tester.tap(find.text('Simples'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<Text>(find.byKey(const Key('task-details-due-date')))
+            .data,
+        'Sem data',
+      );
+      expect(find.text('Sem descrição'), findsOneWidget);
+    });
+
+    testWidgets('a completed task is marked as such', (tester) async {
+      await seed([buildTask('1', title: 'Feita', completedMinute: 1)]);
+      await pump(tester, size: phone);
+      await tester.tap(find.text('Concluídas (1)'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Feita'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Concluída'), findsOneWidget);
+    });
+
+    testWidgets('closing goes back to the list without editing', (
+      tester,
+    ) async {
+      await seed([buildTask('1', title: 'Ver')]);
+      await pump(tester, size: phone);
+      await tester.tap(find.text('Ver'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('task-details-close')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskDetailsSheet), findsNothing);
+      expect(find.byType(TaskFormSheet), findsNothing);
+      expect(find.byType(TaskTile), findsOneWidget);
+    });
+
+    testWidgets('editing opens the form filled with the task', (tester) async {
+      await seed([buildTask('1', title: 'Original', description: 'd')]);
+      await pump(tester, size: phone);
+      await tester.tap(find.text('Original'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('task-details-edit')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskDetailsSheet), findsNothing);
+      expect(find.byType(TaskFormSheet), findsOneWidget);
+      expect(find.text('Editar tarefa'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const Key('task-form-title')),
+        'Editada',
+      );
+      await tester.tap(find.byKey(const Key('task-form-save')));
+      await tester.pumpAndSettle();
+
+      expect((await dataSource.getAll()).single.title, 'Editada');
+      expect(find.widgetWithText(TaskTile, 'Editada'), findsOneWidget);
+    });
+
+    testWidgets('a link in the description opens in the browser', (
+      tester,
+    ) async {
+      await seed([
+        buildTask(
+          '1',
+          title: 'Ler',
+          description: '- artigo https://example.com/artigo',
+        ),
+      ]);
+      await pump(tester, size: phone);
+      await tester.tap(find.text('Ler'));
+      await tester.pumpAndSettle();
+
+      await tester.tapOnText(
+        find.textRange.ofSubstring(
+          'https://example.com/artigo',
+          descendentOf: find.byType(TaskDetailsSheet),
+        ),
+      );
+
+      expect(links.opened, [Uri.parse('https://example.com/artigo')]);
+    });
   });
 
   group('layout', () {
@@ -577,27 +722,140 @@ void main() {
   group('wide window', () {
     const wide = Size(1600, 900);
 
-    testWidgets('tapping a task edits it in the panel, not in a sheet', (
+    testWidgets('tapping a task shows its details in place of the list', (
       tester,
     ) async {
-      await seed([buildTask('1', title: 'Original')]);
+      await seed([
+        buildTask('1', title: 'Original', description: 'Detalhe'),
+        buildTask('2', title: 'Outra'),
+      ]);
       await pump(tester, size: wide);
 
       await tester.tap(find.text('Original'));
       await tester.pumpAndSettle();
 
+      expect(find.byType(TaskDetailsSheet), findsNothing);
+      expect(find.byType(TaskTile), findsNothing);
+      expect(find.byType(TaskDetailsView), findsOneWidget);
+      expect(find.text('Detalhe'), findsOneWidget);
+      expect(find.text('Voltar'), findsOneWidget);
+      expect(find.text('Editar'), findsOneWidget);
+      // The panel still creates until the task is edited.
+      expect(find.text('Nova tarefa'), findsWidgets);
+      expect(find.text('Editar tarefa'), findsNothing);
+      final details = tester.getRect(find.byType(TaskDetailsView));
+      expect(
+        details.right,
+        lessThan(tester.getRect(find.byType(TaskForm)).left),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('going back shows the list again', (tester) async {
+      await seed([buildTask('1', title: 'Original')]);
+      await pump(tester, size: wide);
+      await tester.tap(find.text('Original'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('task-details-back')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskDetailsView), findsNothing);
+      expect(find.byType(TaskTile), findsOneWidget);
+    });
+
+    testWidgets('Escape goes back to the list', (tester) async {
+      await seed([buildTask('1', title: 'Original')]);
+      await pump(tester, size: wide);
+      await tester.tap(find.text('Original'));
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskDetailsView), findsNothing);
+      expect(find.byType(TaskTile), findsOneWidget);
+    });
+
+    testWidgets('editing fills the panel and saving updates the details', (
+      tester,
+    ) async {
+      await seed([buildTask('1', title: 'Original', description: 'Antes')]);
+      await pump(tester, size: wide);
+      await tester.tap(find.text('Original'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('task-details-edit')));
+      await tester.pumpAndSettle();
+
       expect(find.byType(TaskFormSheet), findsNothing);
       expect(find.text('Editar tarefa'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(const Key('task-form-title')),
+                matching: find.byType(TextField),
+              ),
+            )
+            .controller
+            ?.text,
+        'Original',
+      );
 
       await tester.enterText(
         find.byKey(const Key('task-form-title')),
         'Editada',
+      );
+      await tester.enterText(
+        find.byKey(const Key('task-form-description')),
+        'Depois',
       );
       await tester.tap(find.byKey(const Key('task-form-save')));
       await tester.pumpAndSettle();
 
       expect((await dataSource.getAll()).single.title, 'Editada');
       expect(find.text('Editar tarefa'), findsNothing);
+      expect(find.byType(TaskDetailsView), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(const Key('task-details-title'))).data,
+        'Editada',
+      );
+      expect(find.text('Depois'), findsOneWidget);
+    });
+
+    testWidgets('viewing another task resets a form left editing', (
+      tester,
+    ) async {
+      await seed([
+        buildTask('1', title: 'Primeira', createdMinute: 1),
+        buildTask('2', title: 'Segunda', createdMinute: 2),
+      ]);
+      await pump(tester, size: wide);
+      await tester.tap(find.text('Primeira'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('task-details-edit')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('task-details-back')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Segunda'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Editar tarefa'), findsNothing);
+    });
+
+    testWidgets('a link in the details opens in the browser', (tester) async {
+      await seed([
+        buildTask('1', title: 'Ler', description: 'Ver www.example.com'),
+      ]);
+      await pump(tester, size: wide);
+      await tester.tap(find.text('Ler'));
+      await tester.pumpAndSettle();
+
+      await tester.tapOnText(find.textRange.ofSubstring('www.example.com'));
+
+      expect(links.opened.single.host, 'www.example.com');
     });
 
     testWidgets('the panel creates a task when none is selected', (
@@ -620,6 +878,11 @@ void main() {
       await pump(tester, size: wide);
       await tester.tap(find.text('Apagar'));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('task-details-edit')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('task-details-back')));
+      await tester.pumpAndSettle();
+      expect(find.text('Editar tarefa'), findsOneWidget);
 
       await tester.tap(find.byTooltip('Excluir tarefa'));
       await tester.pumpAndSettle();

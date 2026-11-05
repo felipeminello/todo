@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:todo/app/app.dart';
 import 'package:todo/app/injection.dart';
 import 'package:todo/app/theme/google_fonts_typography.dart';
+import 'package:todo/core/links/link_opener.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:todo/features/tasks/domain/usecases/clear_widget_tasks.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
@@ -29,6 +30,7 @@ Future<void> bootstrap() async {
       createAuthBloc: sl.call<AuthBloc>,
       createTasksBloc: sl.call<TasksBloc>,
       clearWidgetTasks: sl<ClearWidgetTasks>(),
+      linkOpener: sl<LinkOpener>(),
       typography: const GoogleFontsTypography(),
     ),
   );

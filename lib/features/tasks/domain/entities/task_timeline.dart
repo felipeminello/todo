@@ -24,6 +24,18 @@ final class TaskTimeline extends Equatable {
   int get pendingCount =>
       undated.length + days.fold(0, (sum, group) => sum + group.tasks.length);
 
+  /// The task with [id] in any block, or `null` when it is not shown.
+  Task? taskById(String id) {
+    for (final task in [
+      ...undated,
+      for (final group in days) ...group.tasks,
+      ...completed,
+    ]) {
+      if (task.id == id) return task;
+    }
+    return null;
+  }
+
   @override
   List<Object> get props => [undated, days, completed];
 }
