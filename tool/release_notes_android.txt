@@ -1,0 +1,10 @@
+<pt-BR>
+Primeira versão do ToDo Bomber.
+
+• Tarefas com título, descrição e data opcional.
+• Sem data no topo; com data numa linha do tempo, dia a dia, com hoje e as atrasadas em destaque.
+• Descrições com listas e links.
+• As mesmas tarefas no celular, no tablet e no computador.
+• Widget na tela inicial com as tarefas de hoje.
+• Modo escuro.
+</pt-BR>

@@ -1,0 +1,10 @@
+<pt-BR>
+Primeira versão do ToDo Bomber.
+
+• Crie tarefas com título, descrição e, se quiser, uma data.
+• As tarefas sem data ficam no topo. As com data seguem numa linha do tempo, dia a dia, com destaque para hoje e para as atrasadas.
+• Descrições com listas e links que abrem com um toque.
+• Entre com seu e-mail e encontre as mesmas tarefas no iPhone, no iPad, no Mac, no Android e no Windows.
+• Widget na tela de início com as tarefas de hoje.
+• Modo escuro, que segue o tema do aparelho.
+</pt-BR>
