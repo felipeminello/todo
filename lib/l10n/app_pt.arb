@@ -273,6 +273,14 @@
   "@taskDetailsEdit": {
     "description": "Botão que abre a edição da tarefa exibida nos detalhes"
   },
+  "taskDetailsComplete": "Concluir",
+  "@taskDetailsComplete": {
+    "description": "Botão que conclui a tarefa pendente exibida nos detalhes"
+  },
+  "taskDetailsReopen": "Reabrir",
+  "@taskDetailsReopen": {
+    "description": "Botão que volta a tarefa concluída exibida nos detalhes para pendente"
+  },
   "taskDetailsClose": "Fechar",
   "@taskDetailsClose": {
     "description": "Botão que fecha os detalhes da tarefa e volta para a lista"

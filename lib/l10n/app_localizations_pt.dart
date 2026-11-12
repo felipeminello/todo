@@ -224,6 +224,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get taskDetailsEdit => 'Editar';
 
   @override
+  String get taskDetailsComplete => 'Concluir';
+
+  @override
+  String get taskDetailsReopen => 'Reabrir';
+
+  @override
   String get taskDetailsClose => 'Fechar';
 
   @override

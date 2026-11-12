@@ -100,13 +100,23 @@ class _TasksPageState extends State<TasksPage> {
       if (_editing != null && _editing?.id != task.id) _openPanel();
       return setState(() => _viewingId = task.id);
     }
-    final edit = await TaskDetailsSheet.open(
+    final action = await TaskDetailsSheet.open(
       context,
       task: task,
       onOpenLink: _openLink,
     );
-    if (edit && mounted) await _edit(task);
+    if (!mounted) return;
+    switch (action) {
+      case TaskDetailsAction.edit:
+        await _edit(task);
+      case TaskDetailsAction.toggleCompletion:
+        _toggle(task);
+      case null:
+        break;
+    }
   }
+
+  void _toggle(Task task) => _bloc.add(TaskCompletionToggled(task));
 
   void _closeDetails() => setState(() => _viewingId = null);
 
@@ -141,7 +151,13 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   void _saveFromPanel(TaskFormResult result) {
-    _save(result, original: _editing);
+    final editing = _editing;
+    // The task may have been completed or reopened while the form was open;
+    // saving the copy the form started from would undo that.
+    final original = editing == null
+        ? null
+        : _bloc.state.timeline.taskById(editing.id) ?? editing;
+    _save(result, original: original);
     _openPanel();
   }
 
@@ -234,8 +250,7 @@ class _TasksPageState extends State<TasksPage> {
                               timeline: state.timeline,
                               selectedTaskId: wide ? _editing?.id : null,
                               horizontalPadding: padding,
-                              onToggle: (task) =>
-                                  _bloc.add(TaskCompletionToggled(task)),
+                              onToggle: _toggle,
                               onOpen: _view,
                               onDelete: _delete,
                               onDeleteCompleted: _deleteCompleted,
@@ -289,6 +304,8 @@ class _TasksPageState extends State<TasksPage> {
                                           horizontalPadding: padding,
                                           onBack: _closeDetails,
                                           onEdit: () => _edit(viewing),
+                                          onToggleCompletion: () =>
+                                              _toggle(viewing),
                                           onOpenLink: _openLink,
                                         ),
                                 ),

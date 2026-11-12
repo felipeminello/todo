@@ -516,6 +516,41 @@ void main() {
       expect(find.widgetWithText(TaskTile, 'Editada'), findsOneWidget);
     });
 
+    testWidgets('completing closes the sheet and completes the task', (
+      tester,
+    ) async {
+      await seed([buildTask('1', title: 'Fazer')]);
+      await pump(tester, size: phone);
+      await tester.tap(find.text('Fazer'));
+      await tester.pumpAndSettle();
+      expect(find.text('Concluir'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byKey(const Key('task-details-toggle')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskDetailsSheet), findsNothing);
+      expect(find.byType(TaskFormSheet), findsNothing);
+      expect((await dataSource.getAll()).single.completedAt, isNotNull);
+      expect(find.text('Concluídas (1)'), findsOneWidget);
+    });
+
+    testWidgets('a completed task can be reopened', (tester) async {
+      await seed([buildTask('1', title: 'Feita', completedMinute: 1)]);
+      await pump(tester, size: phone);
+      await tester.tap(find.text('Concluídas (1)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Feita'));
+      await tester.pumpAndSettle();
+      expect(find.text('Concluir'), findsNothing);
+
+      await tester.tap(find.text('Reabrir'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskDetailsSheet), findsNothing);
+      expect((await dataSource.getAll()).single.completedAt, isNull);
+    });
+
     testWidgets('a link in the description opens in the browser', (
       tester,
     ) async {
@@ -822,6 +857,54 @@ void main() {
         'Editada',
       );
       expect(find.text('Depois'), findsOneWidget);
+    });
+
+    testWidgets('completing keeps the details open and marks the task', (
+      tester,
+    ) async {
+      await seed([buildTask('1', title: 'Fazer')]);
+      await pump(tester, size: wide);
+      await tester.tap(find.text('Fazer'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Concluir'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TaskDetailsView), findsOneWidget);
+      expect(find.text('Concluída'), findsOneWidget);
+      expect(find.text('Reabrir'), findsOneWidget);
+      expect((await dataSource.getAll()).single.completedAt, isNotNull);
+
+      await tester.tap(find.text('Reabrir'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Concluída'), findsNothing);
+      expect(find.text('Concluir'), findsOneWidget);
+      expect((await dataSource.getAll()).single.completedAt, isNull);
+    });
+
+    testWidgets('saving an edit started before completing keeps it done', (
+      tester,
+    ) async {
+      await seed([buildTask('1', title: 'Original')]);
+      await pump(tester, size: wide);
+      await tester.tap(find.text('Original'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('task-details-edit')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('task-details-toggle')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('task-form-title')),
+        'Editada',
+      );
+      await tester.tap(find.byKey(const Key('task-form-save')));
+      await tester.pumpAndSettle();
+
+      final stored = (await dataSource.getAll()).single;
+      expect(stored.title, 'Editada');
+      expect(stored.completedAt, isNotNull);
     });
 
     testWidgets('viewing another task resets a form left editing', (

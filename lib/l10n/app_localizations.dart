@@ -454,6 +454,18 @@ abstract class AppLocalizations {
   /// **'Editar'**
   String get taskDetailsEdit;
 
+  /// Botão que conclui a tarefa pendente exibida nos detalhes
+  ///
+  /// In pt, this message translates to:
+  /// **'Concluir'**
+  String get taskDetailsComplete;
+
+  /// Botão que volta a tarefa concluída exibida nos detalhes para pendente
+  ///
+  /// In pt, this message translates to:
+  /// **'Reabrir'**
+  String get taskDetailsReopen;
+
   /// Botão que fecha os detalhes da tarefa e volta para a lista
   ///
   /// In pt, this message translates to:

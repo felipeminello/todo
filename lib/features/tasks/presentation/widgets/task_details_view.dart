@@ -4,18 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:todo/core/ui/widgets/brand_button.dart';
 import 'package:todo/core/ui/widgets/raised_card.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_completion_button.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_details.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_timeline_view.dart';
 import 'package:todo/l10n/app_localizations.dart';
 
 /// [TaskDetails] in place of the list, for wide windows, with buttons on top
-/// to go back to the list or edit the task in the panel beside it.
+/// to go back to the list, complete (or reopen) the task, or edit it in the
+/// panel beside it.
 class TaskDetailsView extends StatelessWidget {
   const TaskDetailsView({
     super.key,
     required this.task,
     required this.onBack,
     required this.onEdit,
+    required this.onToggleCompletion,
     required this.onOpenLink,
     this.horizontalPadding = 20,
   });
@@ -23,6 +26,7 @@ class TaskDetailsView extends StatelessWidget {
   final Task task;
   final VoidCallback onBack;
   final VoidCallback onEdit;
+  final VoidCallback onToggleCompletion;
   final ValueChanged<Uri> onOpenLink;
   final double horizontalPadding;
 
@@ -51,10 +55,20 @@ class TaskDetailsView extends StatelessWidget {
                   child: Text(l10n.taskDetailsBack),
                 ),
                 const Spacer(),
+                TaskCompletionButton(
+                  isCompleted: task.isCompleted,
+                  onPressed: onToggleCompletion,
+                  height: 46,
+                ),
+                const SizedBox(width: 12),
                 BrandButton(
                   key: const Key('task-details-edit'),
                   onPressed: onEdit,
                   height: 46,
+                  // The completion button leads while the task is pending.
+                  variant: task.isCompleted
+                      ? BrandButtonVariant.primary
+                      : BrandButtonVariant.secondary,
                   icon: const Icon(Icons.edit_outlined),
                   child: Text(l10n.taskDetailsEdit),
                 ),
