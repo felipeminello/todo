@@ -347,5 +347,98 @@
         "type": "String"
       }
     }
+  },
+  "taskAttachmentsTitle": "Anexos",
+  "@taskAttachmentsTitle": {
+    "description": "Título da seção de anexos nos detalhes da tarefa"
+  },
+  "taskAttachmentsAdd": "Anexar arquivo",
+  "@taskAttachmentsAdd": {
+    "description": "Botão que escolhe um arquivo do aparelho para anexar à tarefa"
+  },
+  "taskAttachmentsEmpty": "Nenhum anexo",
+  "@taskAttachmentsEmpty": {
+    "description": "Exibido nos detalhes quando a tarefa não tem anexo"
+  },
+  "taskAttachmentsUploading": "Enviando anexo",
+  "@taskAttachmentsUploading": {
+    "description": "Rótulo de acessibilidade da barra exibida enquanto um arquivo é enviado"
+  },
+  "taskAttachmentsLoadError": "Não foi possível carregar os anexos.",
+  "@taskAttachmentsLoadError": {
+    "description": "Falha ao carregar os anexos da tarefa"
+  },
+  "taskAttachmentDownloadTooltip": "Baixar {name}",
+  "@taskAttachmentDownloadTooltip": {
+    "description": "Dica do botão que salva uma cópia do anexo no aparelho",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "taskAttachmentDeleteTooltip": "Excluir {name}",
+  "@taskAttachmentDeleteTooltip": {
+    "description": "Dica do botão que exclui o anexo",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "taskAttachmentBusySemantics": "Processando {name}",
+  "@taskAttachmentBusySemantics": {
+    "description": "Anúncio do leitor de tela enquanto um anexo é baixado ou excluído",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "taskAttachmentDeleteDialogTitle": "Excluir anexo?",
+  "@taskAttachmentDeleteDialogTitle": {
+    "description": "Título da confirmação de exclusão de um anexo"
+  },
+  "taskAttachmentDeleteDialogMessage": "\"{name}\" será excluído permanentemente.",
+  "@taskAttachmentDeleteDialogMessage": {
+    "description": "Mensagem da confirmação de exclusão de um anexo",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentErrorNetwork": "Sem conexão. Verifique a internet e tente de novo.",
+  "@attachmentErrorNetwork": {
+    "description": "Falha de rede numa operação de anexo"
+  },
+  "attachmentErrorPermission": "Sem permissão para acessar os anexos. Entre novamente.",
+  "@attachmentErrorPermission": {
+    "description": "Servidor recusou o acesso aos anexos"
+  },
+  "attachmentErrorNotFound": "A tarefa ou o anexo não existe mais.",
+  "@attachmentErrorNotFound": {
+    "description": "O anexo, ou a tarefa dele, foi excluído em outro lugar"
+  },
+  "attachmentErrorEmptyFile": "O arquivo está vazio.",
+  "@attachmentErrorEmptyFile": {
+    "description": "O arquivo escolhido para anexar não tem conteúdo"
+  },
+  "attachmentErrorTooLarge": "O arquivo passa do limite de {limit}.",
+  "@attachmentErrorTooLarge": {
+    "description": "O arquivo escolhido para anexar é grande demais; limit já vem formatado, como 25 MB",
+    "placeholders": {
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentErrorLimitReached": "Esta tarefa já atingiu o limite de anexos.",
+  "@attachmentErrorLimitReached": {
+    "description": "A tarefa já tem a quantidade máxima de anexos"
+  },
+  "attachmentErrorUnknown": "Algo deu errado com o anexo. Tente de novo.",
+  "@attachmentErrorUnknown": {
+    "description": "Falha inesperada numa operação de anexo"
   }
 }

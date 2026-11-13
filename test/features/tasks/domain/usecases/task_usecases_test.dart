@@ -4,6 +4,7 @@ import 'package:todo/core/error/failure.dart';
 import 'package:todo/core/time/calendar_date.dart';
 import 'package:todo/features/tasks/domain/entities/new_task.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
+import 'package:todo/features/tasks/domain/repositories/task_attachment_repository.dart';
 import 'package:todo/features/tasks/domain/repositories/task_repository.dart';
 import 'package:todo/features/tasks/domain/usecases/add_task.dart';
 import 'package:todo/features/tasks/domain/usecases/delete_task.dart';
@@ -15,6 +16,9 @@ import '../../../../helpers/fixed_clock.dart';
 import '../../../../helpers/task_factory.dart';
 
 class _MockTaskRepository extends Mock implements TaskRepository {}
+
+class _MockAttachmentRepository extends Mock
+    implements TaskAttachmentRepository {}
 
 void main() {
   late _MockTaskRepository repository;
@@ -165,13 +169,50 @@ void main() {
   });
 
   group('DeleteTask', () {
-    test('deletes by id', () async {
-      when(() => repository.delete('1')).thenAnswer((_) async {});
+    late _MockAttachmentRepository attachments;
 
-      await DeleteTask(repository)('1');
+    setUp(() {
+      attachments = _MockAttachmentRepository();
+      when(() => attachments.deleteAll(any())).thenAnswer((_) async {});
+      when(() => repository.delete(any())).thenAnswer((_) async {});
+    });
+
+    test('deletes by id', () async {
+      await DeleteTask(repository, attachments)('1');
 
       verify(() => repository.delete('1')).called(1);
     });
+
+    test('deletes the attachments of the task before the task', () async {
+      await DeleteTask(repository, attachments)('1');
+
+      verifyInOrder([
+        () => attachments.deleteAll('1'),
+        () => repository.delete('1'),
+      ]);
+    });
+
+    const reasons = {
+      AttachmentFailureReason.network: TaskFailureReason.network,
+      AttachmentFailureReason.permissionDenied:
+          TaskFailureReason.permissionDenied,
+      AttachmentFailureReason.notFound: TaskFailureReason.unknown,
+      AttachmentFailureReason.unknown: TaskFailureReason.unknown,
+    };
+
+    for (final MapEntry(key: attachment, value: task) in reasons.entries) {
+      test('attachments that fail to delete with $attachment keep the task, '
+          'failing with $task', () async {
+        when(() => attachments.deleteAll('1'))
+            .thenThrow(AttachmentFailure(attachment));
+
+        await expectLater(
+          DeleteTask(repository, attachments)('1'),
+          throwsA(TaskFailure(task)),
+        );
+        verifyNever(() => repository.delete(any()));
+      });
+    }
   });
 
   group('ToggleTask', () {

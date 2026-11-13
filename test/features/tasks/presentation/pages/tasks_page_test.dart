@@ -9,6 +9,7 @@ import 'package:todo/core/error/exceptions.dart';
 import 'package:todo/core/links/link_opener.dart';
 import 'package:todo/core/time/calendar_date.dart';
 import 'package:todo/features/tasks/data/models/task_model.dart';
+import 'package:todo/features/tasks/data/repositories/task_attachment_repository_impl.dart';
 import 'package:todo/features/tasks/data/repositories/task_repository_impl.dart';
 import 'package:todo/features/tasks/data/widget/noop_task_widget_publisher.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
@@ -19,19 +20,24 @@ import 'package:todo/features/tasks/domain/usecases/get_tasks.dart';
 import 'package:todo/features/tasks/domain/usecases/publish_widget_tasks.dart';
 import 'package:todo/features/tasks/domain/usecases/toggle_task.dart';
 import 'package:todo/features/tasks/domain/usecases/update_task.dart';
+import 'package:todo/features/tasks/presentation/bloc/task_attachments_bloc.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:todo/features/tasks/presentation/pages/tasks_page.dart';
 import 'package:todo/features/tasks/presentation/theme/task_status_colors.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_attachments_section.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_details_sheet.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_details_view.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_form.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_form_sheet.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_tile.dart';
 
+import '../../../../helpers/fake_attachment_files.dart';
+import '../../../../helpers/fake_task_attachment_remote_data_source.dart';
 import '../../../../helpers/fake_task_remote_data_source.dart';
 import '../../../../helpers/fixed_clock.dart';
 import '../../../../helpers/localized_app.dart';
 import '../../../../helpers/recording_link_opener.dart';
+import '../../../../helpers/task_attachments_bloc_factory.dart';
 import '../../../../helpers/task_factory.dart';
 
 /// Counts loads so refresh triggers can be asserted, and can hold writes to
@@ -63,6 +69,8 @@ final class _CountingDataSource extends FakeTaskRemoteDataSource {
 
 void main() {
   late _CountingDataSource dataSource;
+  late FakeTaskAttachmentRemoteDataSource attachments;
+  late FakeAttachmentFiles files;
   late TasksBloc bloc;
   late RecordingLinkOpener links;
   final clock = FixedClock(DateTime(2026, 10, 27, 10));
@@ -84,7 +92,10 @@ void main() {
       getTasks: GetTasks(repository),
       addTask: AddTask(repository, clock),
       updateTask: UpdateTask(repository),
-      deleteTask: DeleteTask(repository),
+      deleteTask: DeleteTask(
+        repository,
+        TaskAttachmentRepositoryImpl(attachments),
+      ),
       toggleTask: ToggleTask(repository, clock),
       buildTimeline: const BuildTaskTimeline(),
       publishWidgetTasks: PublishWidgetTasks(
@@ -96,8 +107,13 @@ void main() {
     addTearDown(bloc.close);
     await tester.pumpWidget(
       localizedApp(
-        home: RepositoryProvider<LinkOpener>.value(
-          value: links,
+        home: MultiRepositoryProvider(
+          providers: [
+            RepositoryProvider<LinkOpener>.value(value: links),
+            RepositoryProvider<TaskAttachmentsBlocFactory>.value(
+              value: taskAttachmentsBlocFactory(attachments, files),
+            ),
+          ],
           child: BlocProvider.value(value: bloc, child: const TasksPage()),
         ),
       ),
@@ -105,11 +121,20 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> attach(String taskId, String name) => attachments.upload(
+    taskId,
+    name: name,
+    size: 3,
+    openRead: () => Stream.value([1, 2, 3]),
+  );
+
   double topOf(WidgetTester tester, String text) =>
       tester.getTopLeft(find.text(text)).dy;
 
   setUp(() {
     dataSource = _CountingDataSource();
+    attachments = FakeTaskAttachmentRemoteDataSource();
+    files = FakeAttachmentFiles();
     links = RecordingLinkOpener();
   });
 
@@ -285,6 +310,72 @@ void main() {
     expect(await dataSource.getAll(), isEmpty);
   });
 
+  testWidgets('deleting a task deletes its attachments', (tester) async {
+    await seed([
+      // The most recent undated task comes first.
+      buildTask('1', title: 'Apagar', createdMinute: 1),
+      buildTask('2', title: 'Fica'),
+    ]);
+    await attach('task-1', 'recibo.pdf');
+    await attach('task-2', 'outro.pdf');
+    await pump(tester);
+
+    await tester.tap(find.byTooltip('Excluir tarefa').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Apagar'), findsNothing);
+    expect(attachments.storedNames('task-1'), isEmpty);
+    expect(attachments.storedNames('task-2'), hasLength(1));
+  });
+
+  testWidgets('a task whose attachments cannot be deleted stays', (
+    tester,
+  ) async {
+    await seed([buildTask('1', title: 'Apagar')]);
+    await attach('task-1', 'recibo.pdf');
+    await pump(tester);
+    attachments.failNext = const AttachmentRemoteException(
+      AttachmentErrorKind.network,
+    );
+
+    await tester.tap(find.byTooltip('Excluir tarefa'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Apagar'), findsOneWidget);
+    expect(
+      find.text('Sem conexão. Verifique a internet e tente de novo.'),
+      findsOneWidget,
+    );
+    expect(await dataSource.getAll(), hasLength(1));
+    expect(attachments.storedNames('task-1'), hasLength(1));
+  });
+
+  testWidgets('deleting the completed ones deletes their attachments', (
+    tester,
+  ) async {
+    await seed([
+      buildTask('1', title: 'Pendente'),
+      buildTask('2', title: 'Feita 1', completedMinute: 1),
+      buildTask('3', title: 'Feita 2', completedMinute: 2),
+    ]);
+    await attach('task-1', 'fica.pdf');
+    await attach('task-2', 'vai.pdf');
+    await pump(tester);
+
+    await tester.tap(find.byTooltip('Excluir concluídas'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Excluir'));
+    await tester.pumpAndSettle();
+
+    expect(attachments.clearedFolders, unorderedEquals(['task-2', 'task-3']));
+    expect(attachments.storedNames('task-1'), hasLength(1));
+    expect(attachments.storedNames('task-2'), isEmpty);
+  });
+
   testWidgets('deleting the completed ones asks for confirmation', (
     tester,
   ) async {
@@ -446,6 +537,53 @@ void main() {
       final sheet = tester.getRect(find.byType(TaskDetailsSheet));
       expect(sheet.height, greaterThan(phone.height * 0.8));
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the sheet shows the attachments of the task', (tester) async {
+      await seed([
+        buildTask('1', title: 'Ver'),
+        buildTask('2', title: 'Outra'),
+      ]);
+      await attach('task-1', 'recibo.pdf');
+      await attach('task-2', 'de outra tarefa.pdf');
+      await pump(tester, size: phone);
+
+      await tester.tap(find.text('Ver'));
+      await tester.pumpAndSettle();
+
+      final sheet = find.byType(TaskDetailsSheet);
+      expect(
+        find.descendant(
+          of: sheet,
+          matching: find.byType(TaskAttachmentsSection),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('recibo.pdf'), findsOneWidget);
+      expect(find.text('de outra tarefa.pdf'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a file attached on the sheet goes to the folder of the task', (
+      tester,
+    ) async {
+      await seed([buildTask('1', title: 'Ver')]);
+      files.nextPick = attachmentFile('Contrato assinado.pdf', [9, 9]);
+      await pump(tester, size: phone);
+      await tester.tap(find.text('Ver'));
+      await tester.pumpAndSettle();
+      expect(find.text('Nenhum anexo'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Anexar arquivo'));
+      await tester.tap(find.text('Anexar arquivo'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Contrato assinado.pdf'), findsOneWidget);
+      expect(attachments.storedNames('task-1'), hasLength(1));
+      expect(
+        attachments.storedNames('task-1').single,
+        isNot('Contrato assinado.pdf'),
+      );
     });
 
     testWidgets('a task without date or description says so', (tester) async {
@@ -689,7 +827,10 @@ void main() {
       getTasks: GetTasks(repository),
       addTask: AddTask(repository, clock),
       updateTask: UpdateTask(repository),
-      deleteTask: DeleteTask(repository),
+      deleteTask: DeleteTask(
+        repository,
+        TaskAttachmentRepositoryImpl(attachments),
+      ),
       toggleTask: ToggleTask(repository, clock),
       buildTimeline: const BuildTaskTimeline(),
       publishWidgetTasks: PublishWidgetTasks(
@@ -783,6 +924,38 @@ void main() {
         details.right,
         lessThan(tester.getRect(find.byType(TaskForm)).left),
       );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the details show the attachments of the viewed task', (
+      tester,
+    ) async {
+      await seed([
+        buildTask('1', title: 'Original'),
+        buildTask('2', title: 'Outra'),
+      ]);
+      await attach('task-1', 'da original.pdf');
+      await attach('task-2', 'da outra.pdf');
+      await pump(tester, size: wide);
+
+      await tester.tap(find.text('Original'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: find.byType(TaskDetailsView),
+          matching: find.text('da original.pdf'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('da outra.pdf'), findsNothing);
+
+      await tester.tap(find.text('Voltar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Outra'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('da outra.pdf'), findsOneWidget);
+      expect(find.text('da original.pdf'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

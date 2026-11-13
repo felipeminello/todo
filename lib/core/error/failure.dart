@@ -49,3 +49,27 @@ final class TaskFailure extends Failure {
   @override
   String toString() => 'TaskFailure(${reason.name})';
 }
+
+enum AttachmentFailureReason {
+  network,
+  permissionDenied,
+
+  /// The attachment, or the task it belongs to, is gone.
+  notFound,
+  emptyFile,
+  tooLarge,
+  limitReached,
+  unknown,
+}
+
+final class AttachmentFailure extends Failure {
+  const AttachmentFailure(this.reason);
+
+  final AttachmentFailureReason reason;
+
+  @override
+  List<Object> get props => [reason];
+
+  @override
+  String toString() => 'AttachmentFailure(${reason.name})';
+}

@@ -7,6 +7,7 @@ import 'package:todo/core/ui/widgets/brand_background.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
 import 'package:todo/features/tasks/domain/usecases/add_task.dart';
 import 'package:todo/features/tasks/domain/usecases/update_task.dart';
+import 'package:todo/features/tasks/presentation/bloc/task_attachments_bloc.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:todo/features/tasks/presentation/widgets/add_task_button.dart';
 import 'package:todo/features/tasks/presentation/widgets/delete_task_sheet.dart';
@@ -69,6 +70,9 @@ class _TasksPageState extends State<TasksPage> {
 
   TasksBloc get _bloc => context.read<TasksBloc>();
 
+  TaskAttachmentsBlocFactory get _createAttachmentsBloc =>
+      context.read<TaskAttachmentsBlocFactory>();
+
   bool get _isWide =>
       MediaQuery.sizeOf(context).width >= TasksPage.twoPaneBreakpoint;
 
@@ -104,6 +108,7 @@ class _TasksPageState extends State<TasksPage> {
       context,
       task: task,
       onOpenLink: _openLink,
+      createAttachmentsBloc: _createAttachmentsBloc,
     );
     if (!mounted) return;
     switch (action) {
@@ -307,6 +312,8 @@ class _TasksPageState extends State<TasksPage> {
                                           onToggleCompletion: () =>
                                               _toggle(viewing),
                                           onOpenLink: _openLink,
+                                          createAttachmentsBloc:
+                                              _createAttachmentsBloc,
                                         ),
                                 ),
                                 if (loaded)

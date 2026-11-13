@@ -27,8 +27,10 @@ import 'package:todo/features/auth/domain/usecases/sign_in.dart';
 import 'package:todo/features/auth/domain/usecases/sign_out.dart';
 import 'package:todo/features/auth/domain/usecases/sign_up.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:todo/features/tasks/data/datasources/task_attachment_remote_data_source.dart';
 import 'package:todo/features/tasks/data/datasources/task_remote_data_source.dart';
 import 'package:todo/features/tasks/data/models/task_model.dart';
+import 'package:todo/features/tasks/data/repositories/task_attachment_repository_impl.dart';
 import 'package:todo/features/tasks/data/repositories/task_repository_impl.dart';
 import 'package:todo/features/tasks/data/widget/noop_task_widget_publisher.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
@@ -45,9 +47,12 @@ import 'package:todo/features/tasks/presentation/widgets/add_task_button.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_tile.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_timeline_view.dart';
 
+import '../test/helpers/fake_attachment_files.dart';
 import '../test/helpers/fake_auth_remote_data_source.dart';
+import '../test/helpers/fake_task_attachment_remote_data_source.dart';
 import '../test/helpers/fake_task_remote_data_source.dart';
 import '../test/helpers/recording_link_opener.dart';
+import '../test/helpers/task_attachments_bloc_factory.dart';
 
 /// Scenes to run, comma separated; every scene when empty.
 const _scenes = String.fromEnvironment('SCENE');
@@ -339,6 +344,7 @@ class _Director {
     for (final task in _sampleTasks(DateTime.now())) {
       await tasks.create(TaskModel.fromEntity(task));
     }
+    final attachments = FakeTaskAttachmentRemoteDataSource();
     final authBackend = FakeAuthBackend()
       ..savedSession = signedIn ? _user : null;
     final dark =
@@ -354,7 +360,11 @@ class _Director {
               TodoApp(
                 key: UniqueKey(),
                 createAuthBloc: () => _authBloc(authBackend),
-                createTasksBloc: () => _tasksBloc(tasks),
+                createTasksBloc: () => _tasksBloc(tasks, attachments),
+                createTaskAttachmentsBloc: taskAttachmentsBlocFactory(
+                  attachments,
+                  FakeAttachmentFiles(),
+                ),
                 clearWidgetTasks: const ClearWidgetTasks(
                   NoopTaskWidgetPublisher(),
                 ),
@@ -384,14 +394,20 @@ class _Director {
     );
   }
 
-  TasksBloc _tasksBloc(TaskRemoteDataSource dataSource) {
+  TasksBloc _tasksBloc(
+    TaskRemoteDataSource dataSource,
+    TaskAttachmentRemoteDataSource attachments,
+  ) {
     const clock = SystemClock();
     final repository = TaskRepositoryImpl(dataSource);
     return TasksBloc(
       getTasks: GetTasks(repository),
       addTask: AddTask(repository, clock),
       updateTask: UpdateTask(repository),
-      deleteTask: DeleteTask(repository),
+      deleteTask: DeleteTask(
+        repository,
+        TaskAttachmentRepositoryImpl(attachments),
+      ),
       toggleTask: ToggleTask(repository, clock),
       buildTimeline: const BuildTaskTimeline(),
       publishWidgetTasks: PublishWidgetTasks(

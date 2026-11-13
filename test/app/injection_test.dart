@@ -11,18 +11,25 @@ import 'package:mocktail/mocktail.dart';
 import 'package:todo/app/injection.dart';
 import 'package:todo/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:todo/features/auth/data/datasources/firebase_auth_data_source.dart';
+import 'package:todo/features/auth/data/datasources/firebase_id_token_provider.dart';
 import 'package:todo/features/auth/data/datasources/id_token_provider.dart';
 import 'package:todo/features/auth/data/datasources/rest_auth_data_source.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:todo/features/tasks/data/datasources/api_task_attachment_data_source.dart';
 import 'package:todo/features/tasks/data/datasources/firestore_task_data_source.dart';
 import 'package:todo/features/tasks/data/datasources/rest_firestore_task_data_source.dart';
+import 'package:todo/features/tasks/data/datasources/task_attachment_remote_data_source.dart';
 import 'package:todo/features/tasks/data/datasources/task_remote_data_source.dart';
+import 'package:todo/features/tasks/data/files/file_picker_attachment_files.dart';
 import 'package:todo/features/tasks/data/widget/home_widget_storage.dart';
 import 'package:todo/features/tasks/data/widget/home_widget_task_publisher.dart';
 import 'package:todo/features/tasks/data/widget/noop_task_widget_publisher.dart';
 import 'package:todo/features/tasks/data/widget/widget_storage.dart';
+import 'package:todo/features/tasks/domain/repositories/attachment_file_picker.dart';
+import 'package:todo/features/tasks/domain/repositories/attachment_file_saver.dart';
 import 'package:todo/features/tasks/domain/repositories/task_widget_publisher.dart';
 import 'package:todo/features/tasks/domain/usecases/clear_widget_tasks.dart';
+import 'package:todo/features/tasks/presentation/bloc/task_attachments_bloc.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 
 class _MockFirebaseAuth extends Mock implements FirebaseAuth {}
@@ -82,9 +89,41 @@ void main() {
 
       expect(sl<AuthRemoteDataSource>(), isA<FirebaseAuthDataSource>());
       expect(sl<TaskRemoteDataSource>(), isA<FirestoreTaskDataSource>());
-      expect(sl.isRegistered<IdTokenProvider>(), isFalse);
+      expect(sl<IdTokenProvider>(), isA<FirebaseIdTokenProvider>());
     });
   }
+
+  for (final platform in [
+    TargetPlatform.android,
+    TargetPlatform.iOS,
+    TargetPlatform.macOS,
+    TargetPlatform.windows,
+  ]) {
+    test('$platform reaches attachments through the API and the system '
+        'file dialogs', () {
+      configure(platform);
+
+      expect(
+        sl<TaskAttachmentRemoteDataSource>(),
+        isA<ApiTaskAttachmentDataSource>(),
+      );
+      expect(sl<AttachmentFilePicker>(), isA<FilePickerAttachmentFiles>());
+      expect(sl<AttachmentFileSaver>(), same(sl<AttachmentFilePicker>()));
+    });
+  }
+
+  test('each attachments bloc is new and belongs to the task asked for', () {
+    configure(TargetPlatform.macOS);
+
+    final first = sl<TaskAttachmentsBloc>(param1: 'task-1');
+    final second = sl<TaskAttachmentsBloc>(param1: 'task-2');
+
+    expect(first, isNot(same(second)));
+    expect(first.taskId, 'task-1');
+    expect(second.taskId, 'task-2');
+    addTearDown(first.close);
+    addTearDown(second.close);
+  });
 
   test('only Android and iOS use the home screen widget', () {
     expect(usesHomeWidget(TargetPlatform.android), isTrue);

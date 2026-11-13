@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:todo/core/ui/widgets/brand_button.dart';
 import 'package:todo/l10n/app_localizations.dart';
 
-/// Asks before tasks are deleted for good.
+/// Asks before tasks or attachments are deleted for good.
 class DeleteTaskSheet extends StatelessWidget {
   const DeleteTaskSheet({
     super.key,
@@ -40,6 +40,22 @@ class DeleteTaskSheet extends StatelessWidget {
       DeleteTaskSheet(
         heading: l10n.completedDeleteDialogTitle,
         message: l10n.completedDeleteDialogMessage(count),
+      ),
+    );
+  }
+
+  /// Asks about the attachment shown as [name]. Completes with `true` only
+  /// when the deletion is confirmed.
+  static Future<bool> confirmAttachment(
+    BuildContext context, {
+    required String name,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    return _ask(
+      context,
+      DeleteTaskSheet(
+        heading: l10n.taskAttachmentDeleteDialogTitle,
+        message: l10n.taskAttachmentDeleteDialogMessage(name),
       ),
     );
   }

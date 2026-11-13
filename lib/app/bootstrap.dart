@@ -8,6 +8,7 @@ import 'package:todo/app/theme/google_fonts_typography.dart';
 import 'package:todo/core/links/link_opener.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:todo/features/tasks/domain/usecases/clear_widget_tasks.dart';
+import 'package:todo/features/tasks/presentation/bloc/task_attachments_bloc.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:todo/firebase_options.dart';
 
@@ -29,6 +30,8 @@ Future<void> bootstrap() async {
     TodoApp(
       createAuthBloc: sl.call<AuthBloc>,
       createTasksBloc: sl.call<TasksBloc>,
+      createTaskAttachmentsBloc: (taskId) =>
+          sl<TaskAttachmentsBloc>(param1: taskId),
       clearWidgetTasks: sl<ClearWidgetTasks>(),
       linkOpener: sl<LinkOpener>(),
       typography: const GoogleFontsTypography(),

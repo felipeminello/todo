@@ -273,4 +273,69 @@ class AppLocalizationsPt extends AppLocalizations {
   String widgetOverdueOther(String count) {
     return '$count tarefas atrasadas';
   }
+
+  @override
+  String get taskAttachmentsTitle => 'Anexos';
+
+  @override
+  String get taskAttachmentsAdd => 'Anexar arquivo';
+
+  @override
+  String get taskAttachmentsEmpty => 'Nenhum anexo';
+
+  @override
+  String get taskAttachmentsUploading => 'Enviando anexo';
+
+  @override
+  String get taskAttachmentsLoadError => 'Não foi possível carregar os anexos.';
+
+  @override
+  String taskAttachmentDownloadTooltip(String name) {
+    return 'Baixar $name';
+  }
+
+  @override
+  String taskAttachmentDeleteTooltip(String name) {
+    return 'Excluir $name';
+  }
+
+  @override
+  String taskAttachmentBusySemantics(String name) {
+    return 'Processando $name';
+  }
+
+  @override
+  String get taskAttachmentDeleteDialogTitle => 'Excluir anexo?';
+
+  @override
+  String taskAttachmentDeleteDialogMessage(String name) {
+    return '\"$name\" será excluído permanentemente.';
+  }
+
+  @override
+  String get attachmentErrorNetwork =>
+      'Sem conexão. Verifique a internet e tente de novo.';
+
+  @override
+  String get attachmentErrorPermission =>
+      'Sem permissão para acessar os anexos. Entre novamente.';
+
+  @override
+  String get attachmentErrorNotFound => 'A tarefa ou o anexo não existe mais.';
+
+  @override
+  String get attachmentErrorEmptyFile => 'O arquivo está vazio.';
+
+  @override
+  String attachmentErrorTooLarge(String limit) {
+    return 'O arquivo passa do limite de $limit.';
+  }
+
+  @override
+  String get attachmentErrorLimitReached =>
+      'Esta tarefa já atingiu o limite de anexos.';
+
+  @override
+  String get attachmentErrorUnknown =>
+      'Algo deu errado com o anexo. Tente de novo.';
 }

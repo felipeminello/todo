@@ -129,6 +129,17 @@ A persistência é feita no **Firebase** (decisão do usuário), provavelmente c
 - `Firebase.initializeApp` é chamado no bootstrap (`app/`), nunca dentro de BLoC ou widget.
 - Nos testes, use um fake em memória do datasource. Testes não podem depender de rede nem do Firebase real.
 
+## Anexos
+
+Cada tarefa pode ter arquivos anexados, que o usuário baixa e exclui nos detalhes da tarefa.
+
+- Os arquivos ficam num bucket S3 privado, em `<id da tarefa>/<uuid>.<extensão>`. O app mostra o nome do arquivo enviado, guardado como metadado do objeto.
+- O app **nunca** usa credenciais da AWS. Ele chama a API de anexos com o ID token do Firebase e recebe URLs pré-assinadas. Bucket, Lambda e API estão descritos em `infra/attachments/` (README, template CloudFormation e código da Lambda).
+- No app, tudo passa por `TaskAttachmentRemoteDataSource` (`ApiTaskAttachmentDataSource`, igual nas quatro plataformas). Os diálogos de escolher e salvar arquivo ficam atrás de `AttachmentFilePicker` e `AttachmentFileSaver` (pacote `file_picker`).
+- Excluir uma tarefa exclui antes os anexos dela (`DeleteTask`).
+- Os anexos não ficam no documento da tarefa no Firestore: a lista vem da API quando os detalhes abrem (`TaskAttachmentsBloc`).
+- Nos testes, use `FakeTaskAttachmentRemoteDataSource` e `FakeAttachmentFiles` de `test/helpers/`. Testes não podem depender da AWS.
+
 ## Testes
 
 - **Unitários**: entidades, casos de uso (incluindo a regra de ordenação), repositórios, BLoCs (`bloc_test` + `mocktail`).

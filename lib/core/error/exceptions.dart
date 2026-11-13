@@ -41,3 +41,27 @@ final class AuthRemoteException implements Exception {
   @override
   String toString() => 'AuthRemoteException(${kind.name}, $detail)';
 }
+
+enum AttachmentErrorKind {
+  network,
+  unauthenticated,
+  permissionDenied,
+
+  /// The attachment, or the task it belongs to, is gone.
+  notFound,
+  tooLarge,
+
+  /// The task already holds as many attachments as the server accepts.
+  limitReached,
+  unknown,
+}
+
+final class AttachmentRemoteException implements Exception {
+  const AttachmentRemoteException(this.kind, [this.detail]);
+
+  final AttachmentErrorKind kind;
+  final String? detail;
+
+  @override
+  String toString() => 'AttachmentRemoteException(${kind.name}, $detail)';
+}

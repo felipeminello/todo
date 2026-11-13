@@ -8,6 +8,7 @@ import 'package:todo/app/widget_sign_out_listener.dart';
 import 'package:todo/core/links/link_opener.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:todo/features/tasks/domain/usecases/clear_widget_tasks.dart';
+import 'package:todo/features/tasks/presentation/bloc/task_attachments_bloc.dart';
 import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:todo/l10n/app_localizations.dart';
 
@@ -16,6 +17,7 @@ class TodoApp extends StatelessWidget {
     super.key,
     required this.createAuthBloc,
     required this.createTasksBloc,
+    required this.createTaskAttachmentsBloc,
     required this.clearWidgetTasks,
     required this.linkOpener,
     this.typography = const PlatformTypography(),
@@ -23,6 +25,7 @@ class TodoApp extends StatelessWidget {
 
   final AuthBloc Function() createAuthBloc;
   final TasksBloc Function() createTasksBloc;
+  final TaskAttachmentsBlocFactory createTaskAttachmentsBloc;
   final ClearWidgetTasks clearWidgetTasks;
   final LinkOpener linkOpener;
   final AppTypography typography;
@@ -30,8 +33,13 @@ class TodoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Above the MaterialApp so pages and the sheets they open can reach it.
-    return RepositoryProvider<LinkOpener>.value(
-      value: linkOpener,
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<LinkOpener>.value(value: linkOpener),
+        RepositoryProvider<TaskAttachmentsBlocFactory>.value(
+          value: createTaskAttachmentsBloc,
+        ),
+      ],
       child: BlocProvider(
         create: (_) => createAuthBloc()..add(const AuthSessionRequested()),
         child: MaterialApp(

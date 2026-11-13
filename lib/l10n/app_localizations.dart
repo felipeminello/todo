@@ -543,6 +543,108 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'{count} tarefas atrasadas'**
   String widgetOverdueOther(String count);
+
+  /// Título da seção de anexos nos detalhes da tarefa
+  ///
+  /// In pt, this message translates to:
+  /// **'Anexos'**
+  String get taskAttachmentsTitle;
+
+  /// Botão que escolhe um arquivo do aparelho para anexar à tarefa
+  ///
+  /// In pt, this message translates to:
+  /// **'Anexar arquivo'**
+  String get taskAttachmentsAdd;
+
+  /// Exibido nos detalhes quando a tarefa não tem anexo
+  ///
+  /// In pt, this message translates to:
+  /// **'Nenhum anexo'**
+  String get taskAttachmentsEmpty;
+
+  /// Rótulo de acessibilidade da barra exibida enquanto um arquivo é enviado
+  ///
+  /// In pt, this message translates to:
+  /// **'Enviando anexo'**
+  String get taskAttachmentsUploading;
+
+  /// Falha ao carregar os anexos da tarefa
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível carregar os anexos.'**
+  String get taskAttachmentsLoadError;
+
+  /// Dica do botão que salva uma cópia do anexo no aparelho
+  ///
+  /// In pt, this message translates to:
+  /// **'Baixar {name}'**
+  String taskAttachmentDownloadTooltip(String name);
+
+  /// Dica do botão que exclui o anexo
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluir {name}'**
+  String taskAttachmentDeleteTooltip(String name);
+
+  /// Anúncio do leitor de tela enquanto um anexo é baixado ou excluído
+  ///
+  /// In pt, this message translates to:
+  /// **'Processando {name}'**
+  String taskAttachmentBusySemantics(String name);
+
+  /// Título da confirmação de exclusão de um anexo
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluir anexo?'**
+  String get taskAttachmentDeleteDialogTitle;
+
+  /// Mensagem da confirmação de exclusão de um anexo
+  ///
+  /// In pt, this message translates to:
+  /// **'\"{name}\" será excluído permanentemente.'**
+  String taskAttachmentDeleteDialogMessage(String name);
+
+  /// Falha de rede numa operação de anexo
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem conexão. Verifique a internet e tente de novo.'**
+  String get attachmentErrorNetwork;
+
+  /// Servidor recusou o acesso aos anexos
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem permissão para acessar os anexos. Entre novamente.'**
+  String get attachmentErrorPermission;
+
+  /// O anexo, ou a tarefa dele, foi excluído em outro lugar
+  ///
+  /// In pt, this message translates to:
+  /// **'A tarefa ou o anexo não existe mais.'**
+  String get attachmentErrorNotFound;
+
+  /// O arquivo escolhido para anexar não tem conteúdo
+  ///
+  /// In pt, this message translates to:
+  /// **'O arquivo está vazio.'**
+  String get attachmentErrorEmptyFile;
+
+  /// O arquivo escolhido para anexar é grande demais; limit já vem formatado, como 25 MB
+  ///
+  /// In pt, this message translates to:
+  /// **'O arquivo passa do limite de {limit}.'**
+  String attachmentErrorTooLarge(String limit);
+
+  /// A tarefa já tem a quantidade máxima de anexos
+  ///
+  /// In pt, this message translates to:
+  /// **'Esta tarefa já atingiu o limite de anexos.'**
+  String get attachmentErrorLimitReached;
+
+  /// Falha inesperada numa operação de anexo
+  ///
+  /// In pt, this message translates to:
+  /// **'Algo deu errado com o anexo. Tente de novo.'**
+  String get attachmentErrorUnknown;
 }
 
 class _AppLocalizationsDelegate

@@ -12,6 +12,7 @@ import 'package:todo/features/auth/domain/usecases/sign_out.dart';
 import 'package:todo/features/auth/domain/usecases/sign_up.dart';
 import 'package:todo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:todo/features/auth/presentation/pages/auth_page.dart';
+import 'package:todo/features/tasks/data/repositories/task_attachment_repository_impl.dart';
 import 'package:todo/features/tasks/data/widget/noop_task_widget_publisher.dart';
 import 'package:todo/features/tasks/domain/entities/new_task.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
@@ -27,6 +28,7 @@ import 'package:todo/features/tasks/presentation/bloc/tasks_bloc.dart';
 import 'package:todo/features/tasks/presentation/pages/tasks_page.dart';
 
 import '../helpers/fake_auth_remote_data_source.dart';
+import '../helpers/fake_task_attachment_remote_data_source.dart';
 import '../helpers/fixed_clock.dart';
 import '../helpers/localized_app.dart';
 
@@ -86,7 +88,12 @@ void main() {
               getTasks: GetTasks(tasks),
               addTask: AddTask(tasks, clock),
               updateTask: UpdateTask(tasks),
-              deleteTask: DeleteTask(tasks),
+              deleteTask: DeleteTask(
+                tasks,
+                TaskAttachmentRepositoryImpl(
+                  FakeTaskAttachmentRemoteDataSource(),
+                ),
+              ),
               toggleTask: ToggleTask(tasks, clock),
               buildTimeline: const BuildTaskTimeline(),
               publishWidgetTasks: PublishWidgetTasks(

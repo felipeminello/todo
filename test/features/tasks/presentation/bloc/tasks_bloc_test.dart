@@ -9,6 +9,7 @@ import 'package:todo/features/tasks/domain/entities/new_task.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
 import 'package:todo/features/tasks/domain/entities/task_timeline.dart';
 import 'package:todo/features/tasks/domain/entities/widget_task_snapshot.dart';
+import 'package:todo/features/tasks/domain/repositories/task_attachment_repository.dart';
 import 'package:todo/features/tasks/domain/repositories/task_repository.dart';
 import 'package:todo/features/tasks/domain/repositories/task_widget_publisher.dart';
 import 'package:todo/features/tasks/domain/usecases/add_task.dart';
@@ -25,6 +26,9 @@ import '../../../../helpers/task_factory.dart';
 
 class _MockTaskRepository extends Mock implements TaskRepository {}
 
+class _MockAttachmentRepository extends Mock
+    implements TaskAttachmentRepository {}
+
 class _MockTaskWidgetPublisher extends Mock implements TaskWidgetPublisher {}
 
 void main() {
@@ -32,6 +36,7 @@ void main() {
   final pending = buildTask('p', dueDate: CalendarDate(2026, 10, 30));
   final overdue = buildTask('o', dueDate: CalendarDate(2026, 10, 25));
   late _MockTaskRepository repository;
+  late _MockAttachmentRepository attachments;
   late _MockTaskWidgetPublisher widgetPublisher;
   late FixedClock clock;
 
@@ -39,7 +44,7 @@ void main() {
     getTasks: GetTasks(repository),
     addTask: AddTask(repository, clock),
     updateTask: UpdateTask(repository),
-    deleteTask: DeleteTask(repository),
+    deleteTask: DeleteTask(repository, attachments),
     toggleTask: ToggleTask(repository, clock),
     buildTimeline: const BuildTaskTimeline(),
     publishWidgetTasks: PublishWidgetTasks(widgetPublisher, clock),
@@ -85,6 +90,8 @@ void main() {
 
   setUp(() {
     repository = _MockTaskRepository();
+    attachments = _MockAttachmentRepository();
+    when(() => attachments.deleteAll(any())).thenAnswer((_) async {});
     widgetPublisher = _MockTaskWidgetPublisher();
     when(() => widgetPublisher.publish(any())).thenAnswer((_) async {});
     clock = FixedClock(DateTime(2026, 10, 27, 9));
@@ -326,6 +333,37 @@ void main() {
         verify(() => repository.update(completed)).called(1);
         verifyNever(() => repository.getAll());
       },
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'deleting a task deletes its attachments too',
+      build: build,
+      seed: () => loaded([pending, overdue]),
+      act: (bloc) => bloc.add(TaskDeleted(pending)),
+      expect: () => [
+        loaded([overdue]),
+      ],
+      verify: (_) => verifyInOrder([
+        () => attachments.deleteAll('p'),
+        () => repository.delete('p'),
+      ]),
+    );
+
+    blocTest<TasksBloc, TasksState>(
+      'a task whose attachments could not be deleted comes back',
+      setUp: () => when(() => attachments.deleteAll('p'))
+          .thenThrow(const AttachmentFailure(AttachmentFailureReason.network)),
+      build: build,
+      seed: () => loaded([pending, overdue]),
+      act: (bloc) => bloc.add(TaskDeleted(pending)),
+      expect: () => [
+        loaded([overdue]),
+        loaded([
+          overdue,
+          pending,
+        ], failure: failureOf(TaskFailureReason.network)),
+      ],
+      verify: (_) => verifyNever(() => repository.delete(any())),
     );
 
     blocTest<TasksBloc, TasksState>(

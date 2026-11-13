@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:todo/core/ui/widgets/brand_button.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
+import 'package:todo/features/tasks/presentation/bloc/task_attachments_bloc.dart';
+import 'package:todo/features/tasks/presentation/widgets/task_attachments_section.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_completion_button.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_details.dart';
 import 'package:todo/l10n/app_localizations.dart';
@@ -8,17 +10,20 @@ import 'package:todo/l10n/app_localizations.dart';
 /// What the user picked on a [TaskDetailsSheet].
 enum TaskDetailsAction { edit, toggleCompletion }
 
-/// [TaskDetails] in a bottom sheet that fills the screen, for narrow
-/// windows, with buttons to complete (or reopen), edit the task or close.
+/// [TaskDetails] and the task's attachments in a bottom sheet that fills the
+/// screen, for narrow windows, with buttons to complete (or reopen), edit the
+/// task or close.
 class TaskDetailsSheet extends StatelessWidget {
   const TaskDetailsSheet({
     super.key,
     required this.task,
     required this.onOpenLink,
+    required this.createAttachmentsBloc,
   });
 
   final Task task;
   final ValueChanged<Uri> onOpenLink;
+  final TaskAttachmentsBlocFactory createAttachmentsBloc;
 
   /// Completes with the action the user asked for, or `null` when the sheet
   /// is closed.
@@ -26,11 +31,16 @@ class TaskDetailsSheet extends StatelessWidget {
     BuildContext context, {
     required Task task,
     required ValueChanged<Uri> onOpenLink,
+    required TaskAttachmentsBlocFactory createAttachmentsBloc,
   }) => showModalBottomSheet<TaskDetailsAction>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => TaskDetailsSheet(task: task, onOpenLink: onOpenLink),
+    builder: (_) => TaskDetailsSheet(
+      task: task,
+      onOpenLink: onOpenLink,
+      createAttachmentsBloc: createAttachmentsBloc,
+    ),
   );
 
   @override
@@ -46,7 +56,20 @@ class TaskDetailsSheet extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-              child: TaskDetails(task: task, onOpenLink: onOpenLink),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TaskDetails(task: task, onOpenLink: onOpenLink),
+                  const SizedBox(height: 24),
+                  const Divider(height: 1),
+                  const SizedBox(height: 20),
+                  TaskAttachmentsSection(
+                    taskId: task.id,
+                    createBloc: createAttachmentsBloc,
+                  ),
+                ],
+              ),
             ),
           ),
           Padding(
