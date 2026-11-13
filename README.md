@@ -16,6 +16,33 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+## Instalar no iPhone (sem depender do Mac)
+
+Para instalar o app no iPhone e usá-lo depois de desconectar do Mac, compile em
+**release**:
+
+```bash
+flutter run --release -d "iPhone de Felipe"
+```
+
+Se o Flutter não achar o aparelho pelo nome, pegue o ID com `flutter devices` e
+use `-d <id>`. Para separar o build da instalação:
+
+```bash
+flutter build ios --release
+flutter install -d "iPhone de Felipe"
+```
+
+- O `--release` é o que torna o app independente. Em iOS 14 ou superior, um
+  build debug (ou profile) só abre com o Flutter ou o Xcode conectado: tocar no
+  ícone com o aparelho desconectado fecha o app na hora.
+- O iPhone precisa estar conectado (cabo ou Wi-Fi) só durante a instalação.
+- Em release não há hot reload nem logs no terminal.
+- Com conta Apple gratuita (sem o Developer Program), o perfil de provisionamento
+  expira em 7 dias e é preciso reinstalar.
+- No primeiro uso, confie no certificado em *Ajustes › Geral › VPN e
+  Gerenciamento de Dispositivo*.
+
 ## Releases no GitHub (macOS e Windows)
 
 Um push de tag `v*.*.*` roda [.github/workflows/release.yml](.github/workflows/release.yml),
