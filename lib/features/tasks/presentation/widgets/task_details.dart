@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:todo/core/ui/brand_colors.dart';
+import 'package:todo/core/ui/widgets/line_aware_selection_container.dart';
 import 'package:todo/features/tasks/domain/entities/task.dart';
 import 'package:todo/features/tasks/presentation/widgets/task_description.dart';
 import 'package:todo/l10n/app_localizations.dart';
@@ -23,41 +24,43 @@ class TaskDetails extends StatelessWidget {
     );
 
     return SelectionArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (task.isCompleted) ...[
-            const SelectionContainer.disabled(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _CompletedPill(),
+      child: LineAwareSelectionContainer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (task.isCompleted) ...[
+              const SelectionContainer.disabled(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _CompletedPill(),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Semantics(
+              header: true,
+              child: Text(
+                task.title,
+                key: const Key('task-details-title'),
+                style: theme.textTheme.headlineSmall,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            // Copying title and description together shouldn't drag the date
+            // label in between them.
+            SelectionContainer.disabled(child: _DueDate(task: task)),
+            const SizedBox(height: 20),
+            const Divider(height: 1),
+            const SizedBox(height: 20),
+            if (task.description.trim().isEmpty)
+              SelectionContainer.disabled(
+                child: Text(l10n.taskDetailsNoDescription, style: muted),
+              )
+            else
+              TaskDescription(text: task.description, onOpenLink: onOpenLink),
           ],
-          Semantics(
-            header: true,
-            child: Text(
-              task.title,
-              key: const Key('task-details-title'),
-              style: theme.textTheme.headlineSmall,
-            ),
-          ),
-          const SizedBox(height: 14),
-          // Copying title and description together shouldn't drag the date
-          // label in between them.
-          SelectionContainer.disabled(child: _DueDate(task: task)),
-          const SizedBox(height: 20),
-          const Divider(height: 1),
-          const SizedBox(height: 20),
-          if (task.description.trim().isEmpty)
-            SelectionContainer.disabled(
-              child: Text(l10n.taskDetailsNoDescription, style: muted),
-            )
-          else
-            TaskDescription(text: task.description, onOpenLink: onOpenLink),
-        ],
+        ),
       ),
     );
   }

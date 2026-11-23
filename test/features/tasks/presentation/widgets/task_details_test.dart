@@ -37,13 +37,18 @@ void main() {
     createdAt: DateTime.utc(2026, 11, 5),
   );
 
-  Future<void> pump(WidgetTester tester, Task task) => tester.pumpWidget(
-    localizedApp(
-      home: Scaffold(
-        body: TaskDetails(task: task, onOpenLink: opened.add),
+  Future<void> pump(WidgetTester tester, Task task) async {
+    await tester.pumpWidget(
+      localizedApp(
+        home: Scaffold(
+          body: TaskDetails(task: task, onOpenLink: opened.add),
+        ),
       ),
-    ),
-  );
+    );
+    // Nested selection containers join the selection area after a frame, as
+    // the app's ongoing frames do on their own.
+    await tester.pump();
+  }
 
   Future<void> selectAllAndCopy(WidgetTester tester) async {
     await tester.tap(find.byKey(const Key('task-details-title')));
@@ -68,6 +73,25 @@ void main() {
     expect(clipboard, contains('Pagar conta'));
     expect(clipboard, contains('Boleto da luz'));
     expect(clipboard, isNot(contains('2026')));
+  });
+
+  testWidgets('copied text keeps the description line breaks', (tester) async {
+    await pump(
+      tester,
+      task(description: 'Linha 1\nLinha 2\n\nOutro parágrafo'),
+    );
+
+    await selectAllAndCopy(tester);
+
+    expect(clipboard, 'Pagar conta\n\nLinha 1\nLinha 2\n\nOutro parágrafo');
+  });
+
+  testWidgets('copied list items stay one per line', (tester) async {
+    await pump(tester, task(description: 'Comprar:\n- pão\n- leite\n\nFim'));
+
+    await selectAllAndCopy(tester);
+
+    expect(clipboard, 'Pagar conta\n\nComprar:\n\n• pão\n• leite\n\nFim');
   });
 
   testWidgets('dragging over the title copies part of it', (tester) async {
